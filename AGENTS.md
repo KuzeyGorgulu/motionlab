@@ -1,6 +1,6 @@
 # MotionLab Agent Guide
 
-MotionLab is a local-first browser application for extracting physical measurements from ordinary videos. It is intended to become a reliable scientific tool, not a demo. The current repository contains only the foundation and local video-workspace vertical slice.
+MotionLab is a local-first browser application for extracting physical measurements from ordinary videos. It is intended to become a reliable scientific tool, not a demo. The current repository contains the video workspace and a manual point/line/angle annotation layer.
 
 ## Non-negotiable constraints
 
@@ -17,6 +17,9 @@ MotionLab is a local-first browser application for extracting physical measureme
 - Keep project/domain data distinct from transient playback and UI state. React hooks are sufficient until a demonstrated need justifies a state library.
 - Treat media timestamps as the primary timing source. Never label arbitrary seeking or fallback-FPS stepping as exact frame access.
 - Keep overlay coordinate transforms in pure utilities. Changes to geometry or physics math require unit tests, including boundary and round-trip cases.
+- Store annotation geometry only in native video coordinates. Display coordinates are transient input/rendering values and must never enter project state.
+- Associate frame-local data through `TimestampFrameReference`; do not compare floating-point media timestamps directly. Preserve its exact anchor timestamp for future migration.
+- Keep annotation mutations in the annotation reducer. Playback and seeking never belong in annotation undo history.
 - Handle unsupported media, missing metadata, failed playback, replacement, and cleanup explicitly.
 - Maintain keyboard access, visible focus states, labels for icon-only controls, and clear disabled states.
 

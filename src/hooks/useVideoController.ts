@@ -22,6 +22,7 @@ export interface VideoController {
   mediaError: string | null
   hasUsableDuration: boolean
   togglePlayback: () => Promise<void>
+  pause: () => void
   seek: (time: number) => void
   step: (direction: StepDirection) => void
   changePlaybackRate: (rate: number) => void
@@ -149,6 +150,10 @@ export function useVideoController(
       setMediaError(`Playback could not start.${reason}`)
     }
   }, [metadata, videoRef])
+
+  const pause = useCallback(() => {
+    videoRef.current?.pause()
+  }, [videoRef])
 
   const seek = useCallback(
     (time: number) => {
@@ -279,6 +284,7 @@ export function useVideoController(
     mediaError,
     hasUsableDuration,
     togglePlayback,
+    pause,
     seek,
     step,
     changePlaybackRate,

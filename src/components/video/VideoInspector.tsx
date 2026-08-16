@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 import type { LocalVideoSource, VideoMetadata } from '../../types/video'
 import { FALLBACK_FRAME_RATE, formatTimestamp } from '../../video/timing'
 import { ShieldIcon } from '../Icons'
@@ -5,6 +7,7 @@ import { ShieldIcon } from '../Icons'
 interface VideoInspectorProps {
   source: LocalVideoSource
   metadata: VideoMetadata | null
+  children?: ReactNode
 }
 
 function formatFileSize(bytes: number): string {
@@ -23,9 +26,10 @@ function formatFileSize(bytes: number): string {
   return `${value.toFixed(value >= 100 ? 0 : value >= 10 ? 1 : 2)} ${units[unitIndex]}`
 }
 
-export function VideoInspector({ source, metadata }: VideoInspectorProps) {
+export function VideoInspector({ source, metadata, children }: VideoInspectorProps) {
   return (
-    <aside className="inspector" aria-label="Video information">
+    <aside className="inspector" aria-label="Workspace inspector">
+      {children}
       <section className="inspector__section">
         <h2>Video source</h2>
         <dl className="property-list">

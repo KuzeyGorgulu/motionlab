@@ -4,7 +4,7 @@ The sequence favors complete vertical slices over parallel unfinished systems. T
 
 ## Week 1: measurement foundations
 
-### Phase 1 — Video workspace (current)
+### Phase 1 — Video workspace (complete)
 
 Deliver local import/removal, playback, seeking, precise timestamp display, approximate frame stepping, speed selection, metadata/error handling, shortcuts, and a correctly aligned native-coordinate canvas.
 
@@ -17,9 +17,21 @@ Acceptance criteria:
 - Overlay geometry remains aligned through aspect-ratio letterboxing and stage resize.
 - Geometry tests, strict TypeScript, unit tests, and production build pass.
 
-### Phase 2 — Scene calibration
+### Phase 2 — Manual measurement and annotation layer (complete)
 
-Add two-point scale calibration, real-distance/unit input, origin selection, axis orientation, and a small calibration summary. Persist all points in native video coordinates.
+Add frame-local Point, Line, and Angle creation, selection, native-coordinate handle editing, pixel/degree measurements, a lightweight inspector, and annotation undo/redo.
+
+Acceptance criteria:
+
+- Point, Line, and Angle geometry can be created and edited in native video coordinates.
+- Lines report pixel length and angles report degrees with controlled degenerate cases.
+- Timestamp buckets keep annotations isolated to the intended approximate frame position.
+- Creation, update, deletion, frame association, measurements, hit-testing, and undo/redo are tested.
+- Existing playback, resize alignment, local-file privacy, tests, and build remain intact.
+
+### Phase 3 — Scene calibration (recommended next)
+
+Add two-point scale calibration, real-distance/unit input, origin selection, axis orientation, and a small calibration summary. Reuse native-coordinate geometry and keep calibration separate from frame-local annotations.
 
 Acceptance criteria:
 
@@ -28,7 +40,9 @@ Acceptance criteria:
 - Calibration visuals remain aligned at different viewport sizes.
 - Invalid/incomplete calibration is explained and cannot produce measurements.
 
-### Phase 3 — Manual tracking
+## Week 2: turn annotation points into motion data
+
+### Phase 4 — Manual tracking
 
 Create a timestamp-oriented manual point workflow with add, replace, delete, step-and-mark, and visible trajectory history.
 
@@ -39,9 +53,7 @@ Acceptance criteria:
 - The overlay distinguishes the active point and trajectory clearly.
 - Track editing works with keyboard navigation and calibrated or pixel coordinates.
 
-## Week 2: turn tracks into measurements
-
-### Phase 4 — Physics engine
+### Phase 5 — Physics engine
 
 Implement independently tested sample validation, calibrated `x(t)`/`y(t)`, displacement, finite-difference velocity, speed, and acceleration. Define edge handling and smoothing policy before adding smoothing.
 
@@ -52,7 +64,7 @@ Acceptance criteria:
 - Analytic fixtures cover constant velocity and constant acceleration.
 - Physics modules import no React or canvas code.
 
-### Phase 5 — Visualization
+### Phase 6 — Visualization
 
 Add trajectory inspection and focused position/velocity/acceleration graphs with selectable series and cursor-time linkage.
 
@@ -65,7 +77,7 @@ Acceptance criteria:
 
 ## Week 3: assistance, export, and hardening
 
-### Phase 6 — Assisted tracking
+### Phase 7 — Assisted tracking
 
 Prototype local browser-side tracking behind a replaceable worker-friendly interface. Manual tracking and correction remain first-class.
 
@@ -76,7 +88,7 @@ Acceptance criteria:
 - Failures are visible and do not overwrite confirmed points silently.
 - Performance is measured on representative video; large work does not freeze the UI unnecessarily.
 
-### Phase 7 — Export, polish, and end-to-end tests
+### Phase 8 — Export, polish, and end-to-end tests
 
 Add CSV export for raw and processed data, project recovery appropriate to the stabilized schema, UX/error polish, and Playwright coverage for critical flows.
 

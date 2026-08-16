@@ -6,6 +6,10 @@ MotionLab is a desktop-first browser workspace that turns motion visible in an o
 
 The analysis workspace is the product. MotionLab should feel like a compact engineering instrument: dark, precise, information-dense, and understandable without decorative dashboard content.
 
+## Current implemented scope
+
+MotionLab currently imports local videos, provides timestamp-oriented transport controls, and supports editable manual Point, Line, and Angle annotations. Geometry is stored in native video pixels and associated with a bounded timestamp bucket. Lines report pixel distance and angles report degrees. Physical-unit calibration, trajectories, and derived motion quantities remain future work.
+
 ## Intended users
 
 - Students performing mechanics experiments without specialist camera equipment.
@@ -16,11 +20,12 @@ The analysis workspace is the product. MotionLab should feel like a compact engi
 ## Planned workflow
 
 1. Import a local video and inspect it with analysis-oriented playback controls.
-2. Calibrate real-world scale and define the coordinate system.
-3. Record object positions manually, with assisted tracking added later as an optional accelerator.
-4. Correct the track and calculate position, displacement, velocity, and acceleration from timestamps.
-5. Inspect trajectory overlays, graphs, fitted models, and numerical results.
-6. Export raw and processed measurement data.
+2. Add and adjust frame-local geometry to inspect points, pixel distances, and angles.
+3. Calibrate real-world scale and define the coordinate system.
+4. Record object positions manually, with assisted tracking added later as an optional accelerator.
+5. Correct the track and calculate position, displacement, velocity, and acceleration from timestamps.
+6. Inspect trajectory overlays, graphs, fitted models, and numerical results.
+7. Export raw and processed measurement data.
 
 ## Final planned capabilities
 

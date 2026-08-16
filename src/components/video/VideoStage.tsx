@@ -1,9 +1,13 @@
-import { useMemo, useRef, type CSSProperties, type RefObject } from 'react'
+import { useMemo, useRef, type RefObject } from 'react'
 
 import { useElementSize } from '../../hooks/useElementSize'
 import type { VideoController } from '../../hooks/useVideoController'
 import type { VideoMetadata } from '../../types/video'
 import { getContainedContentRect } from '../../video/geometry'
+import {
+  AnnotationCanvas,
+  type AnnotationCanvasProps,
+} from '../annotations/AnnotationCanvas'
 
 interface VideoStageProps {
   sourceUrl: string
@@ -12,6 +16,7 @@ interface VideoStageProps {
   metadata: VideoMetadata | null
   mediaError: string | null
   mediaEvents: VideoController['mediaEvents']
+  annotationLayer: Omit<AnnotationCanvasProps, 'contentRect' | 'nativeSize'>
 }
 
 export function VideoStage({
@@ -21,6 +26,7 @@ export function VideoStage({
   metadata,
   mediaError,
   mediaEvents,
+  annotationLayer,
 }: VideoStageProps) {
   const stageRef = useRef<HTMLDivElement>(null)
   const stageSize = useElementSize(stageRef)
@@ -32,13 +38,6 @@ export function VideoStage({
       }),
     [metadata?.height, metadata?.width, stageSize],
   )
-
-  const overlayStyle = {
-    '--overlay-left': `${contentRect.x}px`,
-    '--overlay-top': `${contentRect.y}px`,
-    '--overlay-width': `${contentRect.width}px`,
-    '--overlay-height': `${contentRect.height}px`,
-  } as CSSProperties
 
   return (
     <div className="video-stage" ref={stageRef}>
@@ -60,13 +59,10 @@ export function VideoStage({
         src={sourceUrl}
       />
       {metadata !== null && contentRect.width > 0 && (
-        <canvas
-          aria-hidden="true"
-          className="video-stage__overlay"
-          data-coordinate-space="native-video-pixels"
-          height={metadata.height}
-          style={overlayStyle}
-          width={metadata.width}
+        <AnnotationCanvas
+          {...annotationLayer}
+          contentRect={contentRect}
+          nativeSize={{ width: metadata.width, height: metadata.height }}
         />
       )}
       {metadata === null && mediaError === null && (
