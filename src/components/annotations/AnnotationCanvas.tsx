@@ -6,6 +6,11 @@ import type {
   AnnotationDraft,
   AnnotationTool,
 } from '../../annotations/types'
+import { renderCalibrationLayer } from '../../calibration/render'
+import type {
+  Calibration,
+  CalibrationOverlayDraft,
+} from '../../calibration/types'
 import type { Point, Rect, Size } from '../../video/geometry'
 import { displayPointToVideo } from '../../video/geometry'
 
@@ -16,6 +21,8 @@ export interface AnnotationCanvasProps {
   selectedId: string | null
   activeTool: AnnotationTool
   draft: AnnotationDraft | null
+  calibration: Calibration | null
+  calibrationDraft: CalibrationOverlayDraft | null
   onPointerDown: (point: Point, hitTolerance: number) => boolean
   onPointerMove: (point: Point | null) => void
   onPointerUp: (point: Point) => void
@@ -49,6 +56,8 @@ export function AnnotationCanvas({
   selectedId,
   activeTool,
   draft,
+  calibration,
+  calibrationDraft,
   onPointerDown,
   onPointerMove,
   onPointerUp,
@@ -63,12 +72,24 @@ export function AnnotationCanvas({
       return
     }
 
+    context.clearRect(0, 0, context.canvas.width, context.canvas.height)
+    renderCalibrationLayer(context, calibration, calibrationDraft, displayScale)
     renderAnnotationLayer(context, annotations, {
       selectedId,
       draft,
       displayScale,
+      calibration,
+      clear: false,
     })
-  }, [activeTool, annotations, displayScale, draft, selectedId])
+  }, [
+    activeTool,
+    annotations,
+    calibration,
+    calibrationDraft,
+    displayScale,
+    draft,
+    selectedId,
+  ])
 
   const overlayStyle = {
     '--overlay-left': `${contentRect.x}px`,
@@ -77,10 +98,12 @@ export function AnnotationCanvas({
     '--overlay-height': `${contentRect.height}px`,
   } as CSSProperties
 
+  const interactionMode = calibrationDraft === null ? activeTool : 'calibration'
+
   return (
     <canvas
-      aria-label={`Video annotation canvas. Active tool: ${activeTool}`}
-      className={`video-stage__overlay annotation-canvas annotation-canvas--${activeTool}`}
+      aria-label={`Video measurement canvas. Active tool: ${interactionMode}`}
+      className={`video-stage__overlay annotation-canvas annotation-canvas--${interactionMode}`}
       data-coordinate-space="native-video-pixels"
       height={nativeSize.height}
       onPointerCancel={() => onPointerCancel()}

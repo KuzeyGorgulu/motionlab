@@ -707,7 +707,8 @@ input:disabled {
 
 .annotation-canvas--point,
 .annotation-canvas--line,
-.annotation-canvas--angle {
+.annotation-canvas--angle,
+.annotation-canvas--calibration {
   cursor: crosshair;
 }
 
@@ -980,6 +981,209 @@ input:disabled {
   background: #151a20;
   font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
   font-size: 8px;
+}
+
+.inspector__heading-row .calibration-status {
+  width: auto;
+  min-width: 34px;
+  color: #79858e;
+  text-transform: uppercase;
+}
+
+.inspector__heading-row .calibration-status--active {
+  color: var(--accent);
+  border-color: #315a53;
+  background: #10211e;
+}
+
+.calibration-empty {
+  margin: 0 0 12px;
+  color: #737f88;
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.calibration-task {
+  padding: 11px;
+  display: grid;
+  gap: 6px;
+  border: 1px solid #634d2e;
+  background: #1d1810;
+}
+
+.calibration-task strong {
+  color: #dfbd7b;
+  font-size: 10px;
+}
+
+.calibration-task span {
+  color: #96846a;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.calibration-task button {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  color: #c5a977;
+  background: transparent;
+  cursor: pointer;
+  font-size: 9px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.calibration-error {
+  margin: 9px 0 0;
+  padding: 8px 9px;
+  border-left: 2px solid #a74e58;
+  color: #eaa0a6;
+  background: #211315;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.calibration-form {
+  display: grid;
+  gap: 10px;
+}
+
+.calibration-form > p {
+  margin: 0;
+  color: #828e97;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.calibration-form--edit {
+  margin-top: 15px;
+  padding-top: 14px;
+  border-top: 1px solid #252d34;
+}
+
+.calibration-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  gap: 7px;
+}
+
+.calibration-fields label {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.calibration-fields label > span {
+  color: #68747d;
+  font-size: 8px;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.calibration-fields input,
+.calibration-fields select {
+  width: 100%;
+  height: 31px;
+  min-width: 0;
+  padding: 0 7px;
+  border: 1px solid #333d46;
+  border-radius: 3px;
+  color: #d5dce1;
+  background: #13181d;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 9px;
+}
+
+.calibration-form__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.calibration-action {
+  min-height: 30px;
+  padding: 0 8px;
+  border: 1px solid #343f48;
+  border-radius: 3px;
+  color: #a9b4bc;
+  background: #171d22;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 620;
+}
+
+.calibration-action:hover {
+  color: #e4e9ec;
+  background: #20272d;
+  border-color: #46535e;
+}
+
+.calibration-action--primary {
+  color: #aee4d9;
+  background: #14241f;
+  border-color: #35645b;
+}
+
+.calibration-action--primary:hover {
+  color: #cef5ed;
+  background: #19312b;
+  border-color: #477d72;
+}
+
+.calibration-action--danger:hover {
+  color: #f1a1a1;
+  background: var(--danger-dark);
+  border-color: #714049;
+}
+
+.calibration-action--wide {
+  width: 100%;
+}
+
+.calibration-summary {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.calibration-summary > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.calibration-summary dt {
+  color: #67737c;
+  font-size: 8px;
+}
+
+.calibration-summary dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #c7d0d6;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.calibration-actions-grid {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.calibration-assumption {
+  margin: 12px 0 0;
+  padding: 8px 9px;
+  border-left: 2px solid #594b32;
+  color: #7f7768;
+  background: #161512;
+  font-size: 8px;
+  line-height: 1.5;
 }
 
 .annotation-list {

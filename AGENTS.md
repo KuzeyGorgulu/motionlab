@@ -1,6 +1,6 @@
 # MotionLab Agent Guide
 
-MotionLab is a local-first browser application for extracting physical measurements from ordinary videos. It is intended to become a reliable scientific tool, not a demo. The current repository contains the video workspace and a manual point/line/angle annotation layer.
+MotionLab is a local-first browser application for extracting physical measurements from ordinary videos. It is intended to become a reliable scientific tool, not a demo. The current repository contains the video workspace, manual point/line/angle annotations, and single-scale planar world-coordinate calibration.
 
 ## Non-negotiable constraints
 
@@ -20,6 +20,10 @@ MotionLab is a local-first browser application for extracting physical measureme
 - Store annotation geometry only in native video coordinates. Display coordinates are transient input/rendering values and must never enter project state.
 - Associate frame-local data through `TimestampFrameReference`; do not compare floating-point media timestamps directly. Preserve its exact anchor timestamp for future migration.
 - Keep annotation mutations in the annotation reducer. Playback and seeking never belong in annotation undo history.
+- Store calibration reference points and origin in native video coordinates. Store only the normalized image-space positive-X basis; derive positive Y as `(xAxis.y, -xAxis.x)` so image-down becomes Cartesian world-up.
+- Keep full precision in calibration and transforms. Store no derived world coordinates in annotations or future tracks; derive them from native positions and the active calibration.
+- Calibration is video-scoped, session-only, and independent from annotation undo history. Replacing/removing a video must clear it without deleting annotations through calibration actions.
+- Never describe a single scale as perspective correction. It applies only to motion and references that are approximately coplanar.
 - Handle unsupported media, missing metadata, failed playback, replacement, and cleanup explicitly.
 - Maintain keyboard access, visible focus states, labels for icon-only controls, and clear disabled states.
 

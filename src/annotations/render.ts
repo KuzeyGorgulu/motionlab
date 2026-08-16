@@ -1,11 +1,18 @@
 import type { Point } from '../video/geometry'
-import { angleBetweenThreePoints, distanceBetweenPoints } from './measurement'
+import {
+  formatLineMeasurement,
+  measureLine,
+} from '../calibration/measurement'
+import type { Calibration } from '../calibration/types'
+import { angleBetweenThreePoints } from './measurement'
 import type { Annotation, AnnotationDraft } from './types'
 
 interface RenderOptions {
   selectedId: string | null
   draft: AnnotationDraft | null
   displayScale: number
+  calibration: Calibration | null
+  clear?: boolean
 }
 
 const NORMAL_COLOR = '#55d6be'
@@ -80,6 +87,7 @@ function drawLineAnnotation(
   unit: number,
   color: string,
   selected: boolean,
+  calibration: Calibration | null,
 ) {
   context.beginPath()
   context.moveTo(annotation.a.x, annotation.a.y)
@@ -90,10 +98,10 @@ function drawLineAnnotation(
   drawHandle(context, annotation.a, unit, color, selected)
   drawHandle(context, annotation.b, unit, color, selected)
 
-  const distance = distanceBetweenPoints(annotation.a, annotation.b)
+  const measurement = measureLine(annotation.a, annotation.b, calibration)
   drawLabel(
     context,
-    distance === null ? 'undefined' : `${distance.toFixed(1)} px`,
+    measurement === null ? 'undefined' : formatLineMeasurement(measurement),
     {
       x: (annotation.a.x + annotation.b.x) / 2,
       y: (annotation.a.y + annotation.b.y) / 2 - 13 * unit,
@@ -202,7 +210,9 @@ export function renderAnnotationLayer(
   annotations: readonly Annotation[],
   options: RenderOptions,
 ) {
-  context.clearRect(0, 0, context.canvas.width, context.canvas.height)
+  if (options.clear !== false) {
+    context.clearRect(0, 0, context.canvas.width, context.canvas.height)
+  }
   const unit = 1 / Math.max(options.displayScale, 0.01)
 
   for (const annotation of annotations) {
@@ -217,7 +227,14 @@ export function renderAnnotationLayer(
         drawPointAnnotation(context, annotation.point, unit, color, selected)
         break
       case 'line':
-        drawLineAnnotation(context, annotation, unit, color, selected)
+        drawLineAnnotation(
+          context,
+          annotation,
+          unit,
+          color,
+          selected,
+          options.calibration,
+        )
         break
       case 'angle':
         drawAngleAnnotation(context, annotation, unit, color, selected)

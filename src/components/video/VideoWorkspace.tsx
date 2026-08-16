@@ -2,10 +2,12 @@ import { useCallback, useEffect, useRef } from 'react'
 
 import type { AnnotationTool } from '../../annotations/types'
 import { useAnnotationWorkspace } from '../../hooks/useAnnotationWorkspace'
+import { useCalibrationWorkspace } from '../../hooks/useCalibrationWorkspace'
 import { useVideoController } from '../../hooks/useVideoController'
 import type { LocalVideoSource } from '../../types/video'
 import { AnnotationInspector } from '../annotations/AnnotationInspector'
 import { AnnotationToolbar } from '../annotations/AnnotationToolbar'
+import { CalibrationPanel } from '../calibration/CalibrationPanel'
 import { FilmIcon, TrashIcon } from '../Icons'
 import { TransportControls } from './TransportControls'
 import { VideoImportButton } from './VideoImportButton'
@@ -39,17 +41,25 @@ export function VideoWorkspace({
   const videoRef = useRef<HTMLVideoElement>(null)
   const controller = useVideoController(videoRef)
   const annotations = useAnnotationWorkspace(controller.currentTime)
+  const calibration = useCalibrationWorkspace(controller.currentTime)
   const controlsEnabled = controller.metadata !== null && controller.mediaError === null
 
   const handleToolChange = useCallback(
     (tool: AnnotationTool) => {
+      calibration.cancelInteraction()
       if (tool !== 'select') {
         controller.pause()
       }
       annotations.setActiveTool(tool)
     },
-    [annotations.setActiveTool, controller.pause],
+    [annotations.setActiveTool, calibration.cancelInteraction, controller.pause],
   )
+
+  const prepareCalibrationInteraction = useCallback(() => {
+    controller.pause()
+    annotations.setActiveTool('select')
+    annotations.cancelInteraction()
+  }, [annotations.cancelInteraction, annotations.setActiveTool, controller.pause])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -60,13 +70,15 @@ export function VideoWorkspace({
       const commandKey = event.ctrlKey || event.metaKey
       if (commandKey && !event.altKey && event.code === 'KeyZ') {
         event.preventDefault()
-        if (event.shiftKey) annotations.redo()
-        else annotations.undo()
+        if (calibration.mode === 'idle') {
+          if (event.shiftKey) annotations.redo()
+          else annotations.undo()
+        }
         return
       }
       if (commandKey && !event.altKey && event.code === 'KeyY') {
         event.preventDefault()
-        annotations.redo()
+        if (calibration.mode === 'idle') annotations.redo()
         return
       }
       if (event.altKey || event.ctrlKey || event.metaKey) {
@@ -75,10 +87,12 @@ export function VideoWorkspace({
 
       if (event.code === 'Escape') {
         event.preventDefault()
-        annotations.cancelInteraction()
+        if (calibration.mode !== 'idle') calibration.cancelInteraction()
+        else annotations.cancelInteraction()
       } else if (
         (event.code === 'Delete' || event.code === 'Backspace') &&
-        annotations.selectedId !== null
+        annotations.selectedId !== null &&
+        calibration.mode === 'idle'
       ) {
         event.preventDefault()
         annotations.deleteSelected()
@@ -92,11 +106,11 @@ export function VideoWorkspace({
         handleToolChange('angle')
       } else if (event.code === 'Space') {
         event.preventDefault()
-        void controller.togglePlayback()
-      } else if (event.code === 'ArrowLeft') {
+        if (calibration.mode === 'idle') void controller.togglePlayback()
+      } else if (event.code === 'ArrowLeft' && calibration.mode === 'idle') {
         event.preventDefault()
         controller.step(-1)
-      } else if (event.code === 'ArrowRight') {
+      } else if (event.code === 'ArrowRight' && calibration.mode === 'idle') {
         event.preventDefault()
         controller.step(1)
       }
@@ -110,6 +124,8 @@ export function VideoWorkspace({
     annotations.redo,
     annotations.selectedId,
     annotations.undo,
+    calibration.cancelInteraction,
+    calibration.mode,
     controller.step,
     controller.togglePlayback,
     controlsEnabled,
@@ -144,8 +160,8 @@ export function VideoWorkspace({
         <div className="analysis-area">
           <AnnotationToolbar
             activeTool={annotations.activeTool}
-            canRedo={annotations.canRedo}
-            canUndo={annotations.canUndo}
+            canRedo={annotations.canRedo && calibration.mode === 'idle'}
+            canUndo={annotations.canUndo && calibration.mode === 'idle'}
             enabled={controlsEnabled}
             onRedo={annotations.redo}
             onToolChange={handleToolChange}
@@ -155,14 +171,28 @@ export function VideoWorkspace({
             annotationLayer={{
               activeTool: annotations.activeTool,
               annotations: annotations.renderedAnnotations,
+              calibration: calibration.calibration,
+              calibrationDraft: calibration.overlayDraft,
               draft: annotations.draft,
-              onPointerCancel: annotations.pointerCancel,
+              onPointerCancel: () => {
+                if (calibration.mode === 'idle') annotations.pointerCancel()
+              },
               onPointerDown: (point, hitTolerance) => {
+                if (calibration.mode !== 'idle') {
+                  controller.pause()
+                  calibration.pointerDown(point)
+                  return false
+                }
                 if (annotations.activeTool !== 'select') controller.pause()
                 return annotations.pointerDown(point, hitTolerance)
               },
-              onPointerMove: annotations.pointerMove,
-              onPointerUp: annotations.pointerUp,
+              onPointerMove: (point) => {
+                if (calibration.mode !== 'idle') calibration.pointerMove(point)
+                else annotations.pointerMove(point)
+              },
+              onPointerUp: (point) => {
+                if (calibration.mode === 'idle') annotations.pointerUp(point)
+              },
               selectedId: annotations.selectedId,
             }}
             mediaError={controller.mediaError}
@@ -186,11 +216,41 @@ export function VideoWorkspace({
           />
         </div>
         <VideoInspector metadata={controller.metadata} source={source}>
+          <CalibrationPanel
+            calibration={calibration.calibration}
+            error={calibration.error}
+            knownDistanceInput={calibration.knownDistanceInput}
+            mode={calibration.mode}
+            onBeginOrigin={() => {
+              prepareCalibrationInteraction()
+              calibration.beginOrigin()
+            }}
+            onBeginScale={() => {
+              prepareCalibrationInteraction()
+              calibration.beginScale()
+            }}
+            onBeginXAxis={() => {
+              prepareCalibrationInteraction()
+              calibration.beginXAxis()
+            }}
+            onCancel={calibration.cancelInteraction}
+            onConfirmScale={calibration.confirmScale}
+            onKnownDistanceChange={calibration.setKnownDistanceInput}
+            onReset={calibration.reset}
+            onUnitChange={calibration.setUnit}
+            onUpdateMeasurement={calibration.updateMeasurement}
+            selectedReferenceCount={calibration.overlayDraft?.referencePoints.length ?? 0}
+            unit={calibration.unit}
+          />
           <AnnotationInspector
             annotations={annotations.currentAnnotations}
-            onDelete={annotations.deleteAnnotation}
+            calibration={calibration.calibration}
+            onDelete={(id) => {
+              calibration.cancelInteraction()
+              annotations.deleteAnnotation(id)
+            }}
             onSelect={(id) => {
-              annotations.setActiveTool('select')
+              handleToolChange('select')
               annotations.selectAnnotation(id)
             }}
             selectedId={annotations.selectedId}

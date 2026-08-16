@@ -29,7 +29,7 @@ Acceptance criteria:
 - Creation, update, deletion, frame association, measurements, hit-testing, and undo/redo are tested.
 - Existing playback, resize alignment, local-file privacy, tests, and build remain intact.
 
-### Phase 3 — Scene calibration (recommended next)
+### Phase 3 — Scene calibration (complete)
 
 Add two-point scale calibration, real-distance/unit input, origin selection, axis orientation, and a small calibration summary. Reuse native-coordinate geometry and keep calibration separate from frame-local annotations.
 
@@ -39,10 +39,13 @@ Acceptance criteria:
 - Pixel-to-real scale and coordinate transforms are pure, tested functions.
 - Calibration visuals remain aligned at different viewport sizes.
 - Invalid/incomplete calibration is explained and cannot produce measurements.
+- Pixel-to-world and world-to-pixel transforms round-trip within numeric tolerance.
+- Calibrated Line and Point displays are derived from unchanged native annotation geometry.
+- Reset and video replacement clear calibration without coupling it to annotations.
 
 ## Week 2: turn annotation points into motion data
 
-### Phase 4 — Manual tracking
+### Phase 4 — Manual tracking (recommended next)
 
 Create a timestamp-oriented manual point workflow with add, replace, delete, step-and-mark, and visible trajectory history.
 

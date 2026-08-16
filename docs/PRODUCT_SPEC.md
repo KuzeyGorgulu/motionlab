@@ -8,7 +8,7 @@ The analysis workspace is the product. MotionLab should feel like a compact engi
 
 ## Current implemented scope
 
-MotionLab currently imports local videos, provides timestamp-oriented transport controls, and supports editable manual Point, Line, and Angle annotations. Geometry is stored in native video pixels and associated with a bounded timestamp bucket. Lines report pixel distance and angles report degrees. Physical-unit calibration, trajectories, and derived motion quantities remain future work.
+MotionLab currently imports local videos, provides timestamp-oriented transport controls, and supports editable manual Point, Line, and Angle annotations. Geometry is stored in native video pixels and associated with a bounded timestamp bucket. A video-scoped planar calibration defines real distance, unit, origin, and axis orientation. Valid calibration derives physical line lengths and Point world coordinates while angles remain in degrees. Trajectories and derived motion quantities remain future work.
 
 ## Intended users
 
@@ -50,3 +50,7 @@ MotionLab currently imports local videos, provides timestamp-oriented transport 
 Imported files are represented with browser Object URLs and decoded locally by the browser. MotionLab does not upload source video or derived frames. Future persistence should store only necessary local project data using browser storage and should remain exportable and removable by the user. Any future feature that would transmit user content requires an explicit product decision and would violate the current architecture.
 
 MotionLab is free to operate: no API keys, metered services, analytics, or required server are part of the product.
+
+## Measurement assumptions
+
+Current calibration uses one uniform scale for a two-dimensional scene plane. Supported units are millimeters, centimeters, meters, inches, and feet. It does not correct perspective, lens distortion, or depth. Measurements are most reliable when the calibration reference and analyzed motion occupy approximately the same plane; substantially different scene depths can introduce scale error.

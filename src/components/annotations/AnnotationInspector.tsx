@@ -1,5 +1,12 @@
-import { angleBetweenThreePoints, distanceBetweenPoints } from '../../annotations/measurement'
+import { angleBetweenThreePoints } from '../../annotations/measurement'
 import type { Annotation } from '../../annotations/types'
+import {
+  formatLineMeasurement,
+  formatMeasurementValue,
+  measureLine,
+  measurePoint,
+} from '../../calibration/measurement'
+import type { Calibration } from '../../calibration/types'
 import { TrashIcon } from '../Icons'
 
 interface AnnotationInspectorProps {
@@ -7,15 +14,23 @@ interface AnnotationInspectorProps {
   selectedId: string | null
   onSelect: (id: string) => void
   onDelete: (id: string) => void
+  calibration: Calibration | null
 }
 
-function measurementFor(annotation: Annotation): string {
+function measurementFor(
+  annotation: Annotation,
+  calibration: Calibration | null,
+): string {
   if (annotation.type === 'point') {
+    const worldMeasurement = measurePoint(annotation.point, calibration)
+    if (worldMeasurement !== null) {
+      return `x ${formatMeasurementValue(worldMeasurement.position.x)} ${worldMeasurement.unit} · y ${formatMeasurementValue(worldMeasurement.position.y)} ${worldMeasurement.unit}`
+    }
     return `x ${annotation.point.x.toFixed(1)} · y ${annotation.point.y.toFixed(1)}`
   }
   if (annotation.type === 'line') {
-    const distance = distanceBetweenPoints(annotation.a, annotation.b)
-    return distance === null ? 'Undefined length' : `${distance.toFixed(1)} px`
+    const measurement = measureLine(annotation.a, annotation.b, calibration)
+    return measurement === null ? 'Undefined length' : formatLineMeasurement(measurement)
   }
 
   const angle = angleBetweenThreePoints(annotation.a, annotation.vertex, annotation.b)
@@ -27,6 +42,7 @@ export function AnnotationInspector({
   selectedId,
   onSelect,
   onDelete,
+  calibration,
 }: AnnotationInspectorProps) {
   const counts: Record<Annotation['type'], number> = { point: 0, line: 0, angle: 0 }
 
@@ -58,7 +74,7 @@ export function AnnotationInspector({
                   <span className={`annotation-type-mark annotation-type-mark--${annotation.type}`} aria-hidden="true" />
                   <span>
                     <strong>{label}</strong>
-                    <small>{measurementFor(annotation)}</small>
+                    <small>{measurementFor(annotation, calibration)}</small>
                   </span>
                 </button>
                 <button
