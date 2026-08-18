@@ -59,20 +59,46 @@ Acceptance criteria:
 - Sample lists seek to stored anchors, and calibrated world coordinates are always derived from unchanged native geometry.
 - Tracking uses independently tested validation, selectors, hit testing, rendering, and bounded undo/redo without changing annotation history.
 
-### Phase 5 — Physics engine
+### Phase 5 — Kinematics and data analysis (complete)
 
-Implement independently tested sample validation, calibrated `x(t)`/`y(t)`, displacement, finite-difference velocity, speed, and acceleration. Define edge handling and smoothing policy before adding smoothing.
+Implement independently tested calibrated/pixel position, displacement, cumulative distance, finite-difference velocity, speed, acceleration, and lightweight timestamp-faithful graphs. Do not smooth or interpolate samples.
 
 Acceptance criteria:
 
-- Pure TypeScript functions accept timestamped tracks and return typed series.
-- Units, coordinate orientation, irregular time intervals, and insufficient samples are handled explicitly.
-- Analytic fixtures cover constant velocity and constant acceleration.
-- Physics modules import no React or canvas code.
+- Pure TypeScript functions accept timestamped tracks and current calibration and return typed derived series without mutating observations.
+- Units, rotated coordinate orientation, image-Y inversion, irregular time intervals, effectively zero intervals, and insufficient samples are handled explicitly.
+- Non-uniform three-point velocity and acceleration estimates are tested with constant velocity, constant acceleration, sparse, irregular, and edited trajectories.
+- The active sample inspector shows position, displacement, path distance, velocity, speed, and acceleration with explicit physical or pixel units.
+- Sample-only x(t), y(t), speed, and acceleration-magnitude graphs update reactively and seek to exact track anchors when points are selected.
+- Analysis modules import no React, canvas, storage, or network code.
+
+### Phase 5.1 — Analysis UI polish (complete)
+
+Move the Phase 5 plots out of the narrow inspector into a responsive, collapsible horizontal analysis dock while retaining the numerical sample inspector and scientific behavior.
+
+Acceptance criteria:
+
+- The right inspector retains all current-sample position, displacement, distance, velocity, and acceleration quantities.
+- The wide dock retains x(t), y(t), Speed, and |a| selection across collapse/reopen.
+- Responsive measured SVG plots expose readable time and reactive quantity/unit axes, a clear zero baseline, exact-timestamp seeking, and current-sample highlighting.
+- A local favicon removes the missing-icon console request without adding a network dependency.
+- Kinematics math, calibration/pixel fallbacks, tracking data, and dependency footprint remain unchanged.
+
+### Phase 5.2 — Workspace layout refinement (complete)
+
+Refine the Phase 5.1 composition into a desktop left workspace and full-height right control/numerical rail without changing analysis behavior.
+
+Acceptance criteria:
+
+- Video, timeline, and the Analysis dock occupy the flexible left column; the dock never extends under the inspector.
+- The 320–360 px desktop inspector spans both workspace rows and provides one independent scrolling region.
+- Numerical groups use modestly larger labels, values, and spacing while retaining the compact instrument style.
+- At 980 px and below, video, Analysis, and inspector stack without horizontal overflow.
+- Analysis collapse/selection state, graph seeking, calibration reactivity, and pixel fallback remain unchanged.
 
 ### Phase 6 — Visualization
 
-Add trajectory inspection and focused position/velocity/acceleration graphs with selectable series and cursor-time linkage.
+Expand the current single-series dock into a synchronized visualization workspace with focused position/velocity/acceleration comparison and cursor-time linkage.
 
 Acceptance criteria:
 

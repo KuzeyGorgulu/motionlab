@@ -10,7 +10,9 @@ The analysis workspace is the product. MotionLab should feel like a compact engi
 
 MotionLab currently imports local videos, provides timestamp-oriented transport controls, and supports editable manual Point, Line, and Angle annotations. Geometry is stored in native video pixels and associated with a bounded timestamp bucket. A video-scoped planar calibration defines real distance, unit, origin, and axis orientation. Valid calibration derives physical line lengths and Point world coordinates while angles remain in degrees.
 
-Users can also create, select, rename, and intentionally delete multiple manual object tracks. Each track is an ordered time series of native-video positions with exact media anchor timestamps and fallback frame-bucket identity. Track Mark adds or corrects one sample per bucket, Track Edit moves the active current-frame sample, and visible trajectories support past/current, all-history, and current-only views. World positions are derived live from calibration rather than stored. Kinematics and graphs remain future work.
+Users can also create, select, rename, and intentionally delete multiple manual object tracks. Each track is an ordered time series of native-video positions with exact media anchor timestamps and fallback frame-bucket identity. Track Mark adds or corrects one sample per bucket, Track Edit moves the active current-frame sample, and visible trajectories support past/current, all-history, and current-only views. World positions are derived live from calibration rather than stored.
+
+The active track has a readable right-side kinematics inspector for position, displacement from the previous valid sample, cumulative path distance, velocity, speed, and acceleration. On desktop, this independently scrollable control and numerical rail spans the full workspace height. A dedicated collapsible Analysis panel fills only the flexible left workspace column below the video/timeline and shows readable sample-only x(t), y(t), speed, and acceleration-magnitude graphs at their true timestamps. Its series selection survives collapse/reopen, and graph points seek back to their exact stored anchors. Analysis is physical when calibration exists and explicitly pixel-based otherwise.
 
 ## Intended users
 
@@ -62,3 +64,9 @@ Current calibration uses one uniform scale for a two-dimensional scene plane. Su
 Manual track samples use media timestamps as the source of truth. The current `timestamp-bucket-v1` identity uses the approximate 30 fps step duration to associate nearby timestamps while retaining the exact timestamp that anchored each sample. This is not a decoded frame number or a guarantee of exact adjacent-frame access. Re-marking the active track in the same bucket updates the existing native position and preserves its stable sample identity and original anchor.
 
 Tracks are independent of frame-local Point annotations and scene calibration. Recalibration changes only derived world-coordinate displays; calibration reset returns tracks to native-pixel display. Track, annotation, and calibration data are session-only and scoped to the selected video.
+
+## Kinematics assumptions
+
+Kinematics uses exact stored media timestamps and supports unequal spacing and skipped frames. Valid interior velocities use a non-uniform three-point centered derivative, while endpoints use a second-order one-sided derivative when three valid samples exist and a two-point secant when only two exist. Acceleration differentiates the derived velocity series at interior samples only; boundary acceleration is intentionally unavailable. Intervals at or below one microsecond are invalid and never produce infinite or non-finite UI values.
+
+No smoothing or interpolation is applied. Numerical differentiation amplifies position noise, so manual velocity estimates can fluctuate and acceleration can be substantially noisier than the tracked positions. Graphs render observed/derived sample points without connecting them through an implied continuous curve.

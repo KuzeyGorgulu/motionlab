@@ -1,5 +1,10 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
 
+import { deriveTrackKinematics } from '../../analysis/kinematics'
+import {
+  INITIAL_ANALYSIS_PANEL_STATE,
+  reduceAnalysisPanelState,
+} from '../../analysis/panelState'
 import type { AnnotationTool } from '../../annotations/types'
 import { useAnnotationWorkspace } from '../../hooks/useAnnotationWorkspace'
 import { useCalibrationWorkspace } from '../../hooks/useCalibrationWorkspace'
@@ -8,6 +13,8 @@ import { useVideoController } from '../../hooks/useVideoController'
 import type { LocalVideoSource } from '../../types/video'
 import { AnnotationInspector } from '../annotations/AnnotationInspector'
 import { AnnotationToolbar } from '../annotations/AnnotationToolbar'
+import { AnalysisPanel } from '../analysis/AnalysisPanel'
+import { KinematicsPanel } from '../analysis/KinematicsPanel'
 import { CalibrationPanel } from '../calibration/CalibrationPanel'
 import { FilmIcon, TrashIcon } from '../Icons'
 import { TrackingPanel } from '../tracking/TrackingPanel'
@@ -45,7 +52,22 @@ export function VideoWorkspace({
   const annotations = useAnnotationWorkspace(controller.currentTime)
   const calibration = useCalibrationWorkspace(controller.currentTime)
   const tracking = useTrackingWorkspace(controller.currentTime)
+  const [analysisPanel, dispatchAnalysisPanel] = useReducer(
+    reduceAnalysisPanelState,
+    INITIAL_ANALYSIS_PANEL_STATE,
+  )
   const controlsEnabled = controller.metadata !== null && controller.mediaError === null
+  const trackAnalysis = useMemo(
+    () => tracking.activeTrack === null
+      ? null
+      : deriveTrackKinematics(tracking.activeTrack, calibration.calibration),
+    [calibration.calibration, tracking.activeTrack],
+  )
+
+  const handleSeekSample = useCallback((time: number) => {
+    controller.pause()
+    controller.seek(time)
+  }, [controller.pause, controller.seek])
 
   const handleToolChange = useCallback(
     (tool: AnnotationTool) => {
@@ -324,6 +346,20 @@ export function VideoWorkspace({
             timelineEnabled={controlsEnabled && controller.hasUsableDuration}
           />
         </div>
+        <AnalysisPanel
+          activeSampleId={tracking.currentSample?.id ?? null}
+          analysis={trackAnalysis}
+          expanded={analysisPanel.expanded}
+          onSeekSample={handleSeekSample}
+          onSeriesChange={(seriesKey) => {
+            dispatchAnalysisPanel({ type: 'select-series', seriesKey })
+          }}
+          onToggleExpanded={() => {
+            dispatchAnalysisPanel({ type: 'toggle-expanded' })
+          }}
+          seriesKey={analysisPanel.seriesKey}
+          track={tracking.activeTrack}
+        />
         <VideoInspector metadata={controller.metadata} source={source}>
           <CalibrationPanel
             calibration={calibration.calibration}
@@ -368,15 +404,17 @@ export function VideoWorkspace({
             onDeleteTrack={tracking.deleteTrack}
             onRedo={tracking.redo}
             onRenameTrack={tracking.renameTrack}
-            onSeekSample={(time) => {
-              controller.pause()
-              controller.seek(time)
-            }}
+            onSeekSample={handleSeekSample}
             onSelectTrack={tracking.selectTrack}
             onTrailModeChange={tracking.setTrailMode}
             onUndo={tracking.undo}
             tracks={tracking.tracks}
             trailMode={tracking.trailMode}
+          />
+          <KinematicsPanel
+            analysis={trackAnalysis}
+            currentSample={tracking.currentSample}
+            track={tracking.activeTrack}
           />
           <AnnotationInspector
             annotations={annotations.currentAnnotations}

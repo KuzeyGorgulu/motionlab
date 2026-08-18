@@ -1,6 +1,6 @@
 # MotionLab Agent Guide
 
-MotionLab is a local-first browser application for extracting physical measurements from ordinary videos. It is intended to become a reliable scientific tool, not a demo. The current repository contains the video workspace, manual point/line/angle annotations, single-scale planar world-coordinate calibration, and manual multi-object tracks.
+MotionLab is a local-first browser application for extracting physical measurements from ordinary videos. It is intended to become a reliable scientific tool, not a demo. The current repository contains the video workspace, manual point/line/angle annotations, single-scale planar world-coordinate calibration, manual multi-object tracks, and derived kinematic analysis.
 
 ## Non-negotiable constraints
 
@@ -24,6 +24,10 @@ MotionLab is a local-first browser application for extracting physical measureme
 - Enforce at most one sample per track per frame identity. A same-bucket remark updates only the existing native position and preserves the original sample ID and anchor timestamp.
 - Keep track mutations in the independent tracking history. Drag previews are transient and a completed sample drag is one undo step. Track selection, playback, and seeking are not history mutations.
 - Derive sample ordering by time and frame identity; never assume users marked sequentially or use an integer frame estimate as authoritative identity.
+- Derive kinematics from exact sample anchor timestamps and current calibration. Never use the approximate 30 fps step fallback as an analysis timestep.
+- Keep position, displacement, distance, velocity, speed, and acceleration out of track state. Analysis results are immutable projections that update when tracks or calibration change.
+- Represent insufficient or invalid derivative estimates as unavailable. Never emit `NaN`, `Infinity`, or a fabricated zero, and do not silently interpolate or smooth observations.
+- Preserve dimensional units: a position unit `u` implies velocity `u/s` and acceleration `u/s²`; uncalibrated analysis must remain visibly pixel-based.
 - Store calibration reference points and origin in native video coordinates. Store only the normalized image-space positive-X basis; derive positive Y as `(xAxis.y, -xAxis.x)` so image-down becomes Cartesian world-up.
 - Keep full precision in calibration and transforms. Store no derived world coordinates in annotations or tracks; derive them from native positions and the active calibration.
 - Calibration is video-scoped, session-only, and independent from annotation undo history. Replacing/removing a video must clear it without deleting annotations through calibration actions.

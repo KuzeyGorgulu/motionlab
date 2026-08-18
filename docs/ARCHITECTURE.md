@@ -2,7 +2,7 @@
 
 ## Current architecture
 
-MotionLab is a client-only React and TypeScript application built with Vite. There is no server. The implemented video, annotation, calibration, and tracking slices are organized as follows:
+MotionLab is a client-only React and TypeScript application built with Vite. There is no server. The implemented video, annotation, calibration, tracking, and analysis slices are organized as follows:
 
 - `src/App.tsx` owns whether a local video is selected and switches between the empty and active workspaces.
 - `src/hooks/useLocalVideoSource.ts` owns local-file validation, Object URL creation, replacement, error state, and cleanup.
@@ -21,6 +21,11 @@ MotionLab is a client-only React and TypeScript application built with Vite. The
 - `src/tracking/types.ts`, `model.ts`, `state.ts`, `selectors.ts`, and `hitTest.ts` define validated manual tracks and their independent bounded history without importing React.
 - `src/tracking/render.ts` draws chronological multi-track trajectories without owning track state.
 - `src/components/tracking/TrackingPanel.tsx` owns lightweight form state and exposes track, mode, trail, history, current-sample, and sample-seek controls.
+- `src/analysis/types.ts`, `kinematics.ts`, `series.ts`, and `chart.ts` define the pure derived kinematics and graph-data pipeline without importing React or mutating tracks.
+- `src/analysis/panelState.ts` owns the small pure collapse/series-selection state machine for the Analysis panel; it never owns or copies derived sample data.
+- `src/components/analysis/KinematicsPanel.tsx` presents compact current-sample quantities in the right inspector.
+- `src/components/analysis/AnalysisPanel.tsx` presents graph selection and the collapsible analysis dock below the video/timeline in the flexible left workspace column.
+- `src/components/analysis/KinematicsGraph.tsx` renders a responsive, dependency-free SVG point plot with explicit quantity/unit axes and maps point activation to exact sample timestamps.
 - `src/math/geometry.ts` owns generic point distance and angle math shared by annotations and calibration; the Phase 2 annotation path remains a compatibility re-export.
 - `src/video/geometry.ts` contains pure aspect-fit and display/native coordinate conversions.
 - `src/video/timing.ts` contains timestamp formatting, safe media-time clamping, and the fallback frame-step policy.
@@ -32,6 +37,12 @@ React component state is used for transient media/UI state. Annotation domain da
 Calibration has a separate reducer and is also session-only. `VideoWorkspace` is keyed by the local Object URL, so video replacement remounts all video-scoped domain controllers; the calibration and tracking reducers additionally define explicit `video-replaced` reset transitions for testability. Calibration changes are not placed in annotation or tracking undo history. Calibration undo can be added later as an independent history if demonstrated workflow needs justify it.
 
 Tracking uses a third, independent reducer/history. Complete create, rename, track delete, sample add/replace/move/delete mutations are undoable; selecting a track, playback, seeking, trail preferences, and pointer previews are not. Track controls expose undo/redo directly. While Track Mark or Edit owns the canvas, Ctrl/Cmd+Z targets tracking; otherwise it retains its annotation behavior. This avoids merging unrelated histories and preserves all Phase 2 behavior.
+
+## Workspace layout
+
+The active desktop workspace is a two-column CSS Grid. The flexible left column contains the video/annotation stage and transport in its upper row and the collapsible Analysis dock in its lower row. The 320–360 px right inspector spans both rows, so calibration, tracking, numerical analysis, annotation, and source controls form one continuous rail and the graph never extends beneath them. The inspector is the only independently scrolling desktop region; its stable scrollbar gutter avoids changing control width as content grows.
+
+At 980 px and below, the grid becomes one column in document order: video/timeline, Analysis, then inspector. The inspector returns to normal page flow and uses two internal columns until the existing narrow-screen breakpoint reduces it to one. Graph sizing remains based on its left-workspace container rather than the contained video's visible rectangle, so portrait-video letterboxing cannot narrow the graph.
 
 ## Local media lifecycle
 
@@ -81,6 +92,20 @@ The canvas renders calibration, then trajectories, then frame-local annotations.
 
 Track Mark and Track Edit are explicit canvas modes. Entering either pauses playback, cancels calibration capture and unfinished annotation interaction, and selects the annotation Select tool. Starting an annotation or calibration interaction exits tracking. Mark creates or corrects the active current-bucket sample; an optional action then performs the existing approximate 30 fps step. Edit hit-tests only the active track's current sample, stores drag preview outside document state, and commits once at pointer-up. Starting playback exits tracking, while Left/Right stepping keeps the tracking mode active for efficient manual work.
 
+## Derived kinematics
+
+Kinematics is an immutable projection of the active `Track` and current `Calibration`; none of its outputs enter tracking history or sample storage. Invalid source samples are excluded, remaining samples are normalized chronologically, and calibrated positions are obtained only through the existing `pixelToWorld` transform. Without calibration, native positions remain in explicit pixel space. The unit metadata is dimensional: `u`, `u/s`, and `u/s²`, where `u` is the selected calibration unit or `px`.
+
+For each valid positive interval, displacement is the coordinate-space difference between consecutive positions and cumulative distance adds each segment magnitude. It is path length, not endpoint displacement. Intervals of one microsecond or less are treated as effectively zero and produce unavailable interval/derivative values rather than `NaN` or infinity.
+
+Velocity is differentiated from position using the derivative of the quadratic interpolant through three samples. This is a centered three-point estimate at interior samples and a second-order one-sided estimate at endpoints, and its weights account for unequal timestamp spacing. A two-sample track uses its valid secant velocity at both endpoints. Acceleration applies the same non-uniform centered derivative to velocity at interior samples; it is deliberately unavailable at boundaries or when any required neighboring velocity is unavailable. No constant-frame-rate assumption, smoothing, interpolation, or extrapolated boundary acceleration is used.
+
+`VideoWorkspace` memoizes full-track analysis once on active track/calibration identity and passes the same immutable projection to both the numerical inspector and Analysis panel. Playback timestamp updates only select the current derived sample and do not recompute the numerical series. A track edit, delete, undo/redo, active-track switch, or calibration change produces a new dependency and updates all quantities and graphs immediately.
+
+Graph selectors expose x position, y position, speed, and acceleration magnitude. Their selection and the dock's expanded state live in a tiny reducer above the panel, so collapsing hides only the presentation and preserves both selection and derived analysis. The responsive SVG measures its available plot area, labels time and the reactive dimensional unit explicitly, and draws a distinct zero baseline when the range crosses zero. It plots discrete points using their exact media timestamps and does not connect them with an implied interpolating curve. Selecting a point seeks the media controller to that sample's exact anchor; the current-frame sample receives a distinct graph marker. Missing derivative results are omitted rather than plotted as zero.
+
+Numerical differentiation amplifies tracking noise. Velocity is less stable than position, and acceleration—being a second numerical derivative—can be substantially noisier. This limitation is presented in the UI; Phase 5 intentionally adds no smoothing policy.
+
 ## Calibration model and validity
 
 A stored `Calibration` is always valid. Invalid or incomplete input remains transient and `createCalibration`/update functions return controlled result unions with explicit errors. The model contains:
@@ -113,7 +138,7 @@ Annotations never store world coordinates. Line lengths and Point coordinates ar
 
 ## Calibration overlay and interaction
 
-The existing native-resolution canvas renders calibration first and annotations second. Calibration reference geometry uses a distinct purple treatment; origin and positive X/Y arrows use separate colors. Canvas input is routed to exactly one active domain. Starting calibration pauses playback, selects the annotation Select tool, and cancels incomplete annotation geometry. Annotation shortcuts and mutations are suppressed while calibration capture is active. A timestamp-bucket change cancels incomplete calibration selection so reference points cannot silently come from different video positions.
+The existing native-resolution canvas renders calibration first, trajectories second, and frame-local annotations last. Calibration reference geometry uses a distinct purple treatment; origin and positive X/Y arrows use separate colors. Canvas input is routed to exactly one active domain. Starting calibration pauses playback, selects the annotation Select tool, and cancels incomplete annotation geometry. Annotation shortcuts and mutations are suppressed while calibration capture is active. A timestamp-bucket change cancels incomplete calibration selection so reference points cannot silently come from different video positions.
 
 The calibration assumes a single uniform planar scale. It is not a perspective homography, camera calibration, lens correction, or depth model. A reference and measured motion at substantially different scene depths can produce inaccurate distances.
 
@@ -142,9 +167,8 @@ Shortcuts are ignored while focus is in normal interactive/form controls.
 
 ## Future extension points (not implemented)
 
-- Phase 5 physics functions should consume ordered timestamped native samples plus optional calibration and remain independent of React. They should return derived position, displacement, distance, finite-difference velocity/speed, and acceleration series without mutating tracks.
 - Canvas rendering can evolve into distinct overlay layers without changing native-coordinate storage.
 - Frame decoding/tracking work can move behind a worker boundary; OpenCV.js is a possible later implementation detail.
 - Project persistence can be introduced after a stable project schema exists, likely with IndexedDB.
 
-Physics calculations, graphs, interpolation, persistence, perspective correction, assisted tracking, and export do not exist in the current codebase. Annotation and tracking undo histories are in-memory and use bounded full immutable snapshots; a command/delta model can replace them if large projects demonstrate a measured need. Calibration currently has no undo history and must be reset or edited explicitly. Timestamp buckets remain an approximate fallback identity until a decoded-frame-aware strategy is available.
+Smoothing, model fitting, expanded graph comparison, interpolation, persistence, perspective correction, assisted tracking, and export do not exist in the current codebase. Annotation and tracking undo histories are in-memory and use bounded full immutable snapshots; a command/delta model can replace them if large projects demonstrate a measured need. Calibration currently has no undo history and must be reset or edited explicitly. Timestamp buckets remain an approximate fallback identity until a decoded-frame-aware strategy is available.

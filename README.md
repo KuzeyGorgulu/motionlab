@@ -21,6 +21,8 @@ To track an object, create and select a track in **Manual tracking**, enter **Ma
 
 Track samples store exact media anchor timestamps, fallback frame-bucket references, and native-video pixel positions only. Calibration-derived world positions update live without changing the stored trajectory. Tracks, calibration, and annotations are session-only and clear when the video is replaced or removed.
 
+The full-height right-side **Numerical inspector** derives position, displacement, cumulative path distance, velocity, speed, and acceleration for the active track. Results use the calibration's physical unit when available and explicit `px`, `px/s`, and `px/s²` units otherwise. A collapsible Analysis panel fills the left workspace column below the video/timeline and provides readable x(t), y(t), Speed, and |a| sample graphs; clicking a graph point seeks to that sample's exact media anchor timestamp.
+
 Escape cancels the active canvas interaction; Delete/Backspace removes the current track sample while a tracking mode is active, or the selected annotation otherwise. Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z apply to the active tracking domain while tracking and to annotations otherwise. Track history also has explicit controls in its panel.
 
 ## Validate
@@ -31,4 +33,4 @@ npm run typecheck
 npm run build
 ```
 
-See `docs/PRODUCT_SPEC.md`, `docs/ARCHITECTURE.md`, and `docs/ROADMAP.md` for current scope and planned phases. Derived kinematics, graphs, automatic tracking, persistence, and export are intentionally not implemented yet.
+See `docs/PRODUCT_SPEC.md`, `docs/ARCHITECTURE.md`, and `docs/ROADMAP.md` for current scope and planned phases. Automatic tracking, smoothing, model fitting, persistence, and export are intentionally not implemented yet.
