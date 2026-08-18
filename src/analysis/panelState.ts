@@ -1,17 +1,17 @@
-import type { GraphSeriesKey } from './types'
+import type { VisualizationMode } from './types'
 
 export interface AnalysisPanelState {
   expanded: boolean
-  seriesKey: GraphSeriesKey
+  mode: VisualizationMode
 }
 
 export type AnalysisPanelAction =
   | { type: 'toggle-expanded' }
-  | { type: 'select-series'; seriesKey: GraphSeriesKey }
+  | { type: 'select-mode'; mode: VisualizationMode }
 
 export const INITIAL_ANALYSIS_PANEL_STATE: AnalysisPanelState = {
   expanded: true,
-  seriesKey: 'position-x',
+  mode: 'position',
 }
 
 export function reduceAnalysisPanelState(
@@ -21,7 +21,7 @@ export function reduceAnalysisPanelState(
   switch (action.type) {
     case 'toggle-expanded':
       return { ...state, expanded: !state.expanded }
-    case 'select-series':
-      return { ...state, seriesKey: action.seriesKey }
+    case 'select-mode':
+      return { ...state, mode: action.mode }
   }
 }

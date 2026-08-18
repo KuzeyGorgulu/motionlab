@@ -1,8 +1,10 @@
 import type {
+  AnalysisTimePoint,
   GraphDataPoint,
-  GraphSeries,
-  GraphSeriesKey,
   TrackKinematics,
+  VisualizationGroup,
+  VisualizationMode,
+  VisualizationSeries,
 } from './types'
 
 function availablePoints(
@@ -20,50 +22,119 @@ function availablePoints(
   return points
 }
 
-export function selectGraphSeries(
+function timelineFor(analysis: TrackKinematics): AnalysisTimePoint[] {
+  return analysis.samples
+    .filter((sample) => Number.isFinite(sample.source.time) && sample.source.time >= 0)
+    .map((sample) => ({
+      sampleId: sample.source.id,
+      time: sample.source.time,
+    }))
+}
+
+export function selectVisualizationGroup(
   analysis: TrackKinematics,
-  key: GraphSeriesKey,
-): GraphSeries {
-  switch (key) {
-    case 'position-x':
+  mode: VisualizationMode,
+): VisualizationGroup {
+  const timeline = timelineFor(analysis)
+  let series: VisualizationSeries[]
+
+  switch (mode) {
+    case 'position':
+      series = [
+        {
+          key: 'position-x',
+          label: 'X',
+          marker: 'circle',
+          points: availablePoints(analysis, (index) =>
+            analysis.samples[index]?.position.x ?? null,
+          ),
+        },
+        {
+          key: 'position-y',
+          label: 'Y',
+          marker: 'square',
+          points: availablePoints(analysis, (index) =>
+            analysis.samples[index]?.position.y ?? null,
+          ),
+        },
+      ]
       return {
-        key,
-        label: 'Position x',
-        axisLabel: 'X',
+        mode,
+        label: 'Position',
+        axisLabel: 'Position',
         unit: analysis.positionUnit,
-        points: availablePoints(analysis, (index) =>
-          analysis.samples[index]?.position.x ?? null,
-        ),
+        timeline,
+        series,
       }
-    case 'position-y':
+    case 'velocity':
+      series = [
+        {
+          key: 'velocity-x',
+          label: 'vx',
+          marker: 'circle',
+          points: availablePoints(analysis, (index) =>
+            analysis.samples[index]?.velocity?.x ?? null,
+          ),
+        },
+        {
+          key: 'velocity-y',
+          label: 'vy',
+          marker: 'square',
+          points: availablePoints(analysis, (index) =>
+            analysis.samples[index]?.velocity?.y ?? null,
+          ),
+        },
+        {
+          key: 'speed',
+          label: 'Speed',
+          marker: 'diamond',
+          points: availablePoints(analysis, (index) =>
+            analysis.samples[index]?.velocity?.magnitude ?? null,
+          ),
+        },
+      ]
       return {
-        key,
-        label: 'Position y',
-        axisLabel: 'Y',
-        unit: analysis.positionUnit,
-        points: availablePoints(analysis, (index) =>
-          analysis.samples[index]?.position.y ?? null,
-        ),
-      }
-    case 'speed':
-      return {
-        key,
-        label: 'Speed',
-        axisLabel: 'Speed',
+        mode,
+        label: 'Velocity',
+        axisLabel: 'Velocity',
         unit: analysis.velocityUnit,
-        points: availablePoints(analysis, (index) =>
-          analysis.samples[index]?.velocity?.magnitude ?? null,
-        ),
+        timeline,
+        series,
       }
     case 'acceleration':
+      series = [
+        {
+          key: 'acceleration-x',
+          label: 'ax',
+          marker: 'circle',
+          points: availablePoints(analysis, (index) =>
+            analysis.samples[index]?.acceleration?.x ?? null,
+          ),
+        },
+        {
+          key: 'acceleration-y',
+          label: 'ay',
+          marker: 'square',
+          points: availablePoints(analysis, (index) =>
+            analysis.samples[index]?.acceleration?.y ?? null,
+          ),
+        },
+        {
+          key: 'acceleration',
+          label: '|a|',
+          marker: 'diamond',
+          points: availablePoints(analysis, (index) =>
+            analysis.samples[index]?.acceleration?.magnitude ?? null,
+          ),
+        },
+      ]
       return {
-        key,
-        label: 'Acceleration magnitude',
-        axisLabel: '|a|',
+        mode,
+        label: 'Acceleration',
+        axisLabel: 'Acceleration',
         unit: analysis.accelerationUnit,
-        points: availablePoints(analysis, (index) =>
-          analysis.samples[index]?.acceleration?.magnitude ?? null,
-        ),
+        timeline,
+        series,
       }
   }
 }

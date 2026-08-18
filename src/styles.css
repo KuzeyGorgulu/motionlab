@@ -1934,9 +1934,9 @@ input:disabled {
 }
 
 .kinematics-series-tabs {
-  width: min(560px, 100%);
+  width: min(520px, 100%);
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 5px;
 }
 
@@ -1989,16 +1989,23 @@ input:disabled {
   display: block;
 }
 
+.kinematics-graph__interaction-area {
+  fill: transparent;
+  cursor: crosshair;
+}
+
 .kinematics-graph__grid {
   stroke: #273038;
   stroke-width: 0.7;
   vector-effect: non-scaling-stroke;
+  pointer-events: none;
 }
 
 .kinematics-graph__axis {
   stroke: #59656d;
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
+  pointer-events: none;
 }
 
 .kinematics-graph__zero {
@@ -2006,6 +2013,7 @@ input:disabled {
   stroke-dasharray: 5 4;
   stroke-width: 1.25;
   vector-effect: non-scaling-stroke;
+  pointer-events: none;
 }
 
 .kinematics-graph__label {
@@ -2023,45 +2031,115 @@ input:disabled {
 
 .kinematics-graph__point {
   cursor: pointer;
+  outline: none;
+}
+
+.kinematics-graph__point-hit {
+  fill: transparent;
+  stroke: none;
+  pointer-events: all;
+}
+
+.kinematics-graph__marker-shape {
   stroke: #071013;
   stroke-width: 2;
   vector-effect: non-scaling-stroke;
 }
 
-.kinematics-graph__point--negative {
-  stroke: #3d271b;
-}
-
-.kinematics-graph__point--zero {
-  stroke: #263238;
-}
-
-.kinematics-graph__point:hover,
-.kinematics-graph__point:focus {
-  stroke: #ffffff;
-  outline: none;
-}
-
-.kinematics-graph__point--active {
+.kinematics-graph__point:hover .kinematics-graph__marker-shape,
+.kinematics-graph__point:focus-visible .kinematics-graph__marker-shape {
   stroke: #ffffff;
   stroke-width: 2.5;
 }
 
+.kinematics-graph__active-ring {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 1.7;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.kinematics-graph__playhead {
+  stroke: #71e2d1;
+  stroke-width: 1.6;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.kinematics-graph__playhead-cap {
+  fill: #71e2d1;
+  pointer-events: none;
+}
+
+.kinematics-graph__cursor {
+  stroke: #f0b86c;
+  stroke-dasharray: 5 4;
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
 .kinematics-graph__legend {
-  min-height: 26px;
+  min-height: 32px;
   padding: 6px 10px;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 6px;
+  gap: 8px 14px;
   border-top: 1px solid #252e35;
   color: #77848c;
   font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
   font-size: 8px;
 }
 
-.kinematics-graph__legend span:last-child {
+.kinematics-graph__series-legend,
+.kinematics-graph__sync-readout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.kinematics-graph__series-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #aeb9c0;
+  font-weight: 650;
+}
+
+.kinematics-graph__legend-marker {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  display: inline-block;
+  border: 1px solid #05080a;
+}
+
+.kinematics-graph__legend-marker--circle {
+  border-radius: 50%;
+}
+
+.kinematics-graph__legend-marker--diamond {
+  transform: rotate(45deg) scale(0.82);
+}
+
+.kinematics-graph__sync-readout {
+  min-width: 0;
+  justify-content: center;
+}
+
+.kinematics-graph__video-time {
+  color: #91ddd3;
+}
+
+.kinematics-graph__cursor-time {
+  color: #d9ad6c;
+}
+
+.kinematics-graph__method-note {
   text-align: right;
+  white-space: nowrap;
 }
 
 .kinematics-graph__empty {
@@ -2074,6 +2152,22 @@ input:disabled {
   font-size: 10px;
   line-height: 1.45;
   text-align: center;
+}
+
+.kinematics-graph__empty strong,
+.kinematics-graph__empty span,
+.kinematics-graph__empty small {
+  display: block;
+}
+
+.kinematics-graph__empty strong {
+  color: #9ba8b0;
+  font-size: 11px;
+}
+
+.kinematics-graph__empty small {
+  color: #7e8c94;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
 }
 
 .property-list {
@@ -2295,7 +2389,17 @@ input:disabled {
   }
 
   .kinematics-graph__legend {
+    grid-template-columns: 1fr;
+    gap: 5px;
     font-size: 7px;
+  }
+
+  .kinematics-graph__sync-readout {
+    justify-content: flex-start;
+  }
+
+  .kinematics-graph__method-note {
+    text-align: left;
   }
 }
 

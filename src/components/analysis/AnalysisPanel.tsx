@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
 
-import { selectGraphSeries } from '../../analysis/series'
+import { selectVisualizationGroup } from '../../analysis/series'
 import type {
-  GraphSeriesKey,
   TrackKinematics,
+  VisualizationMode,
 } from '../../analysis/types'
 import type { Track } from '../../tracking/types'
 import { KinematicsGraph } from './KinematicsGraph'
@@ -12,33 +12,34 @@ interface AnalysisPanelProps {
   track: Track | null
   analysis: TrackKinematics | null
   activeSampleId: string | null
+  currentTime: number
   expanded: boolean
-  seriesKey: GraphSeriesKey
-  onSeriesChange: (seriesKey: GraphSeriesKey) => void
-  onSeekSample: (time: number) => void
+  mode: VisualizationMode
+  onModeChange: (mode: VisualizationMode) => void
+  onSeekTime: (time: number) => void
   onToggleExpanded: () => void
 }
 
-const SERIES: Array<{ key: GraphSeriesKey; label: string }> = [
-  { key: 'position-x', label: 'x(t)' },
-  { key: 'position-y', label: 'y(t)' },
-  { key: 'speed', label: 'Speed' },
-  { key: 'acceleration', label: '|a|' },
+const MODES: Array<{ key: VisualizationMode; label: string }> = [
+  { key: 'position', label: 'Position' },
+  { key: 'velocity', label: 'Velocity' },
+  { key: 'acceleration', label: 'Acceleration' },
 ]
 
 export function AnalysisPanel({
   track,
   analysis,
   activeSampleId,
+  currentTime,
   expanded,
-  seriesKey,
-  onSeriesChange,
-  onSeekSample,
+  mode,
+  onModeChange,
+  onSeekTime,
   onToggleExpanded,
 }: AnalysisPanelProps) {
-  const series = useMemo(
-    () => (analysis === null ? null : selectGraphSeries(analysis, seriesKey)),
-    [analysis, seriesKey],
+  const group = useMemo(
+    () => (analysis === null ? null : selectVisualizationGroup(analysis, mode)),
+    [analysis, mode],
   )
   const panelBodyId = 'motion-analysis-panel-body'
 
@@ -53,7 +54,7 @@ export function AnalysisPanel({
           <strong>{track?.name ?? 'No active track'}</strong>
           {analysis !== null && (
             <small>
-              {analysis.samples.length} valid samples · {analysis.positionUnit}
+              {analysis.samples.length} valid samples · {group?.unit}
             </small>
           )}
         </div>
@@ -86,25 +87,26 @@ export function AnalysisPanel({
             </div>
           ) : (
             <>
-              <div className="kinematics-series-tabs" aria-label="Graph series">
-                {SERIES.map((option) => (
+              <div className="kinematics-series-tabs" aria-label="Visualization quantity">
+                {MODES.map((option) => (
                   <button
-                    aria-pressed={seriesKey === option.key}
-                    className={seriesKey === option.key ? 'kinematics-series-tab kinematics-series-tab--active' : 'kinematics-series-tab'}
+                    aria-pressed={mode === option.key}
+                    className={mode === option.key ? 'kinematics-series-tab kinematics-series-tab--active' : 'kinematics-series-tab'}
                     key={option.key}
-                    onClick={() => onSeriesChange(option.key)}
+                    onClick={() => onModeChange(option.key)}
                     type="button"
                   >
                     {option.label}
                   </button>
                 ))}
               </div>
-              {series !== null && (
+              {group !== null && (
                 <KinematicsGraph
                   activeSampleId={activeSampleId}
                   color={track.color}
-                  onSeekSample={onSeekSample}
-                  series={series}
+                  currentTime={currentTime}
+                  group={group}
+                  onSeekTime={onSeekTime}
                 />
               )}
             </>

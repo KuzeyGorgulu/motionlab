@@ -28,6 +28,8 @@ MotionLab is a local-first browser application for extracting physical measureme
 - Keep position, displacement, distance, velocity, speed, and acceleration out of track state. Analysis results are immutable projections that update when tracks or calibration change.
 - Represent insufficient or invalid derivative estimates as unavailable. Never emit `NaN`, `Infinity`, or a fabricated zero, and do not silently interpolate or smooth observations.
 - Preserve dimensional units: a position unit `u` implies velocity `u/s` and acceleration `u/s²`; uncalibrated analysis must remain visibly pixel-based.
+- Build visualization families only from existing derived samples and give every series in a family the full analyzed-track media-time domain. Missing derivative points stay missing; never narrow a derivative graph's time domain to only its available points.
+- Keep the continuous video playhead separate from the transient graph cursor and frame-reference-selected sample. Arbitrary graph cursor positions are time-only, are never persisted, and must not imply interpolated measurements.
 - Store calibration reference points and origin in native video coordinates. Store only the normalized image-space positive-X basis; derive positive Y as `(xAxis.y, -xAxis.x)` so image-down becomes Cartesian world-up.
 - Keep full precision in calibration and transforms. Store no derived world coordinates in annotations or tracks; derive them from native positions and the active calibration.
 - Calibration is video-scoped, session-only, and independent from annotation undo history. Replacing/removing a video must clear it without deleting annotations through calibration actions.

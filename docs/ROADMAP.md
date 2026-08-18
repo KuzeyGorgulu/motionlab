@@ -96,7 +96,7 @@ Acceptance criteria:
 - At 980 px and below, video, Analysis, and inspector stack without horizontal overflow.
 - Analysis collapse/selection state, graph seeking, calibration reactivity, and pixel fallback remain unchanged.
 
-### Phase 6 — Visualization
+### Phase 6 — Visualization (complete)
 
 Expand the current single-series dock into a synchronized visualization workspace with focused position/velocity/acceleration comparison and cursor-time linkage.
 
@@ -105,7 +105,10 @@ Acceptance criteria:
 - Graph cursor and video timestamp can be compared reliably.
 - Axes include quantity and units; no fake values appear.
 - Dense and sparse tracks remain legible.
-- Any chart dependency is selected only after accessibility, bundle, and export needs are evaluated.
+- Position compares X/Y, Velocity compares vx/vy/Speed, and Acceleration compares ax/ay/|a| on family-wide time/value domains.
+- Video playhead, time-only hover cursor, background timestamp seeking, and exact-anchor sample seeking remain distinct and synchronized.
+- Missing derivatives stay absent; no lines, interpolation, smoothing, resampling, aggregation, or downsampling are introduced.
+- The existing SVG architecture is retained after evaluating accessibility, bundle size, domain control, and future SVG export suitability; no chart dependency is added.
 
 ## Week 3: assistance, export, and hardening
 

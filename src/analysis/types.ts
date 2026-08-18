@@ -34,11 +34,19 @@ export interface TrackKinematics {
   samples: KinematicSample[]
 }
 
-export type GraphSeriesKey =
+export type VisualizationMode = 'position' | 'velocity' | 'acceleration'
+
+export type VisualizationSeriesKey =
   | 'position-x'
   | 'position-y'
+  | 'velocity-x'
+  | 'velocity-y'
   | 'speed'
+  | 'acceleration-x'
+  | 'acceleration-y'
   | 'acceleration'
+
+export type MarkerShape = 'circle' | 'square' | 'diamond'
 
 export interface GraphDataPoint {
   sampleId: string
@@ -46,12 +54,25 @@ export interface GraphDataPoint {
   value: number
 }
 
-export interface GraphSeries {
-  key: GraphSeriesKey
+export interface AnalysisTimePoint {
+  sampleId: string
+  time: number
+}
+
+export interface VisualizationSeries {
+  key: VisualizationSeriesKey
+  label: string
+  marker: MarkerShape
+  points: GraphDataPoint[]
+}
+
+export interface VisualizationGroup {
+  mode: VisualizationMode
   label: string
   axisLabel: string
   unit: PositionUnit | VelocityUnit | AccelerationUnit
-  points: GraphDataPoint[]
+  timeline: AnalysisTimePoint[]
+  series: VisualizationSeries[]
 }
 
 export interface ChartPoint extends GraphDataPoint {
@@ -59,11 +80,32 @@ export interface ChartPoint extends GraphDataPoint {
   y: number
 }
 
-export interface ChartLayout {
+export interface ChartPlot {
+  left: number
+  top: number
+  right: number
+  bottom: number
+}
+
+export interface TimeDomain {
+  min: number
+  max: number
+  sourceMin: number
+  sourceMax: number
+}
+
+export interface ChartSeriesLayout {
+  key: VisualizationSeriesKey
   points: ChartPoint[]
-  plot: { left: number; top: number; right: number; bottom: number }
+}
+
+export interface ChartLayout {
+  series: ChartSeriesLayout[]
+  plot: ChartPlot
   timeMin: number
   timeMax: number
+  sourceTimeMin: number
+  sourceTimeMax: number
   valueMin: number
   valueMax: number
 }

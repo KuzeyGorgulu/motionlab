@@ -349,15 +349,16 @@ export function VideoWorkspace({
         <AnalysisPanel
           activeSampleId={tracking.currentSample?.id ?? null}
           analysis={trackAnalysis}
+          currentTime={controller.currentTime}
           expanded={analysisPanel.expanded}
-          onSeekSample={handleSeekSample}
-          onSeriesChange={(seriesKey) => {
-            dispatchAnalysisPanel({ type: 'select-series', seriesKey })
+          mode={analysisPanel.mode}
+          onModeChange={(mode) => {
+            dispatchAnalysisPanel({ type: 'select-mode', mode })
           }}
+          onSeekTime={handleSeekSample}
           onToggleExpanded={() => {
             dispatchAnalysisPanel({ type: 'toggle-expanded' })
           }}
-          seriesKey={analysisPanel.seriesKey}
           track={tracking.activeTrack}
         />
         <VideoInspector metadata={controller.metadata} source={source}>
