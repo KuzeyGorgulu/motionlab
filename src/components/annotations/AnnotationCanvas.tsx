@@ -11,8 +11,16 @@ import type {
   Calibration,
   CalibrationOverlayDraft,
 } from '../../calibration/types'
+import { renderTrackLayer } from '../../tracking/render'
+import type {
+  Track,
+  TrackDragPreview,
+  TrackingMode,
+  TrailMode,
+} from '../../tracking/types'
 import type { Point, Rect, Size } from '../../video/geometry'
 import { displayPointToVideo } from '../../video/geometry'
+import { createFrameReference } from '../../video/frameReference'
 
 export interface AnnotationCanvasProps {
   contentRect: Rect
@@ -23,6 +31,12 @@ export interface AnnotationCanvasProps {
   draft: AnnotationDraft | null
   calibration: Calibration | null
   calibrationDraft: CalibrationOverlayDraft | null
+  tracks: Track[]
+  activeTrackId: string | null
+  trackingMode: TrackingMode
+  trailMode: TrailMode
+  trackingDragPreview: TrackDragPreview | null
+  currentTime: number
   onPointerDown: (point: Point, hitTolerance: number) => boolean
   onPointerMove: (point: Point | null) => void
   onPointerUp: (point: Point) => void
@@ -58,6 +72,12 @@ export function AnnotationCanvas({
   draft,
   calibration,
   calibrationDraft,
+  tracks,
+  activeTrackId,
+  trackingMode,
+  trailMode,
+  trackingDragPreview,
+  currentTime,
   onPointerDown,
   onPointerMove,
   onPointerUp,
@@ -74,6 +94,14 @@ export function AnnotationCanvas({
 
     context.clearRect(0, 0, context.canvas.width, context.canvas.height)
     renderCalibrationLayer(context, calibration, calibrationDraft, displayScale)
+    renderTrackLayer(context, tracks, {
+      activeTrackId,
+      currentFrame: createFrameReference(currentTime),
+      currentTime,
+      displayScale,
+      trailMode,
+      dragPreview: trackingDragPreview,
+    })
     renderAnnotationLayer(context, annotations, {
       selectedId,
       draft,
@@ -83,12 +111,18 @@ export function AnnotationCanvas({
     })
   }, [
     activeTool,
+    activeTrackId,
     annotations,
     calibration,
     calibrationDraft,
     displayScale,
     draft,
     selectedId,
+    currentTime,
+    trackingDragPreview,
+    trackingMode,
+    tracks,
+    trailMode,
   ])
 
   const overlayStyle = {
@@ -98,7 +132,12 @@ export function AnnotationCanvas({
     '--overlay-height': `${contentRect.height}px`,
   } as CSSProperties
 
-  const interactionMode = calibrationDraft === null ? activeTool : 'calibration'
+  const interactionMode =
+    calibrationDraft !== null
+      ? 'calibration'
+      : trackingMode !== 'idle'
+        ? `tracking-${trackingMode}`
+        : activeTool
 
   return (
     <canvas

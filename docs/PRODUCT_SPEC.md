@@ -8,7 +8,9 @@ The analysis workspace is the product. MotionLab should feel like a compact engi
 
 ## Current implemented scope
 
-MotionLab currently imports local videos, provides timestamp-oriented transport controls, and supports editable manual Point, Line, and Angle annotations. Geometry is stored in native video pixels and associated with a bounded timestamp bucket. A video-scoped planar calibration defines real distance, unit, origin, and axis orientation. Valid calibration derives physical line lengths and Point world coordinates while angles remain in degrees. Trajectories and derived motion quantities remain future work.
+MotionLab currently imports local videos, provides timestamp-oriented transport controls, and supports editable manual Point, Line, and Angle annotations. Geometry is stored in native video pixels and associated with a bounded timestamp bucket. A video-scoped planar calibration defines real distance, unit, origin, and axis orientation. Valid calibration derives physical line lengths and Point world coordinates while angles remain in degrees.
+
+Users can also create, select, rename, and intentionally delete multiple manual object tracks. Each track is an ordered time series of native-video positions with exact media anchor timestamps and fallback frame-bucket identity. Track Mark adds or corrects one sample per bucket, Track Edit moves the active current-frame sample, and visible trajectories support past/current, all-history, and current-only views. World positions are derived live from calibration rather than stored. Kinematics and graphs remain future work.
 
 ## Intended users
 
@@ -54,3 +56,9 @@ MotionLab is free to operate: no API keys, metered services, analytics, or requi
 ## Measurement assumptions
 
 Current calibration uses one uniform scale for a two-dimensional scene plane. Supported units are millimeters, centimeters, meters, inches, and feet. It does not correct perspective, lens distortion, or depth. Measurements are most reliable when the calibration reference and analyzed motion occupy approximately the same plane; substantially different scene depths can introduce scale error.
+
+## Manual tracking assumptions
+
+Manual track samples use media timestamps as the source of truth. The current `timestamp-bucket-v1` identity uses the approximate 30 fps step duration to associate nearby timestamps while retaining the exact timestamp that anchored each sample. This is not a decoded frame number or a guarantee of exact adjacent-frame access. Re-marking the active track in the same bucket updates the existing native position and preserves its stable sample identity and original anchor.
+
+Tracks are independent of frame-local Point annotations and scene calibration. Recalibration changes only derived world-coordinate displays; calibration reset returns tracks to native-pixel display. Track, annotation, and calibration data are session-only and scoped to the selected video.

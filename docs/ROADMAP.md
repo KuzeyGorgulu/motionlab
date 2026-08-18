@@ -45,16 +45,19 @@ Acceptance criteria:
 
 ## Week 2: turn annotation points into motion data
 
-### Phase 4 — Manual tracking (recommended next)
+### Phase 4 — Manual tracking (complete)
 
 Create a timestamp-oriented manual point workflow with add, replace, delete, step-and-mark, and visible trajectory history.
 
 Acceptance criteria:
 
-- Points are stored by media timestamp in native video coordinates.
-- A user can correct/delete any point without losing unrelated samples.
-- The overlay distinguishes the active point and trajectory clearly.
-- Track editing works with keyboard navigation and calibrated or pixel coordinates.
+- Multiple stable-ID tracks can be created, selected, renamed, and intentionally deleted without changing annotations, calibration, playback, or peer tracks.
+- Ordered samples store exact media anchor timestamps, shared fallback frame references, and native-video positions only.
+- Re-marking within the same bucket updates the existing sample position without creating an ambiguous duplicate or changing its original anchor.
+- Track Mark supports approximate step-and-mark and optional automatic advance; Track Edit previews a native-coordinate drag and commits it as one history mutation.
+- Trajectories render in chronological order with active/inactive and current-frame states, plus past/current, muted-future, and current-only visibility choices.
+- Sample lists seek to stored anchors, and calibrated world coordinates are always derived from unchanged native geometry.
+- Tracking uses independently tested validation, selectors, hit testing, rendering, and bounded undo/redo without changing annotation history.
 
 ### Phase 5 — Physics engine
 

@@ -1,14 +1,10 @@
 import type { Point } from '../video/geometry'
+import type { TimestampFrameReference } from '../video/frameReference'
+
+export type { TimestampFrameReference } from '../video/frameReference'
 
 export type AnnotationTool = 'select' | 'point' | 'line' | 'angle'
 export type DrawingTool = Exclude<AnnotationTool, 'select'>
-
-export interface TimestampFrameReference {
-  scheme: 'timestamp-bucket-v1'
-  bucketIndex: number
-  bucketDuration: number
-  anchorTime: number
-}
 
 interface AnnotationBase {
   id: string
