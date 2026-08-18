@@ -2,6 +2,8 @@
 
 MotionLab is a local-first browser workspace for extracting physical measurements from ordinary videos. It provides private local video import, analysis-oriented playback controls, editable frame-associated geometry, uniform planar calibration, and manual multi-object trajectories.
 
+**Live Demo:** https://motionlab-qzeybei.vercel.app/
+
 User videos are decoded in the browser from local Object URLs. They are not uploaded, copied to a backend, or sent to analytics.
 
 ## Run locally
