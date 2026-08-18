@@ -67,6 +67,15 @@ export function EmptyWorkspace({
               <strong>Local by design.</strong> No upload, account, or API key.
             </span>
           </div>
+          <div className="empty-workspace__production-signature">
+            <span>A</span>
+            <img
+              className="empty-workspace__production-logo"
+              src="/qzeybei-logo.png"
+              alt="Qzeybei"
+            />
+            <span>production</span>
+          </div>
         </div>
       </section>
     </main>

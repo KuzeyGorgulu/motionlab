@@ -389,6 +389,29 @@ input:disabled {
   font-weight: 600;
 }
 
+.empty-workspace__production-signature {
+  margin-top: clamp(28px, 6dvh, 64px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(8px, 1vw, 12px);
+  color: rgba(154, 169, 177, 0.64);
+  font-family: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.empty-workspace__production-logo {
+  display: block;
+  width: clamp(96px, 9vw, 124px);
+  max-width: 36vw;
+  height: auto;
+  opacity: 0.66;
+}
+
 .workspace {
   height: calc(100dvh - var(--header-height));
   min-height: 0;
@@ -2353,6 +2376,16 @@ input:disabled {
     flex-direction: column;
   }
 
+  .empty-workspace__production-signature {
+    margin-top: clamp(26px, 5dvh, 42px);
+    gap: 7px;
+  }
+
+  .empty-workspace__production-logo {
+    width: clamp(84px, 26vw, 104px);
+    max-width: 38vw;
+  }
+
   .timeline-row {
     grid-template-columns: 78px minmax(80px, 1fr) 78px;
     gap: 7px;
@@ -2400,6 +2433,20 @@ input:disabled {
 
   .kinematics-graph__method-note {
     text-align: left;
+  }
+}
+
+@media (max-height: 650px) {
+  .empty-shell {
+    padding-block: clamp(18px, 4dvh, 26px);
+  }
+
+  .empty-workspace__production-signature {
+    margin-top: 24px;
+  }
+
+  .empty-workspace__production-logo {
+    width: 100px;
   }
 }
 
