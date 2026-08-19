@@ -70,6 +70,8 @@ export function AnnotationToolbar({
           ? 'Click to mark or replace the active track sample'
           : trackingMode === 'edit'
             ? 'Drag the active track sample on the current frame'
+            : trackingMode === 'seed'
+              ? 'Click the target to seed forward assisted tracking'
             : activeTool === 'select'
           ? 'Select geometry or drag a control point'
           : activeTool === 'point'

@@ -10,7 +10,7 @@ export const TRACK_COLORS = [
   '#50a7ff',
 ] as const
 
-export type TrackingMode = 'idle' | 'mark' | 'edit'
+export type TrackingMode = 'idle' | 'mark' | 'edit' | 'seed'
 export type TrailMode = 'all' | 'past' | 'current'
 
 export interface TrackSample {

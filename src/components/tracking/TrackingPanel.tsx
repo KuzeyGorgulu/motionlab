@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 
+import type { AssistedSessionState } from '../../assistedTracking/types'
 import { formatMeasurementValue, measurePoint } from '../../calibration/measurement'
 import type { Calibration } from '../../calibration/types'
 import type {
@@ -10,6 +11,7 @@ import type {
 } from '../../tracking/types'
 import { formatTimestamp } from '../../video/timing'
 import { TrashIcon } from '../Icons'
+import { AssistedTrackingControls } from './AssistedTrackingControls'
 
 interface TrackingPanelProps {
   tracks: Track[]
@@ -21,6 +23,8 @@ interface TrackingPanelProps {
   calibration: Calibration | null
   canUndo: boolean
   canRedo: boolean
+  assistedSession: AssistedSessionState
+  assistedAverageProcessingMs: number | null
   onCreateTrack: (name: string) => boolean
   onRenameTrack: (id: string, name: string) => void
   onDeleteTrack: (id: string) => void
@@ -34,6 +38,12 @@ interface TrackingPanelProps {
   onSeekSample: (time: number) => void
   onUndo: () => void
   onRedo: () => void
+  onBeginAssistedSeed: () => void
+  onCancelAssistedSeed: () => void
+  onStartAssisted: () => void
+  onStopAssisted: () => void
+  onAcceptAssisted: () => void
+  onDiscardAssisted: () => void
 }
 
 function coordinateText(sample: TrackSample, calibration: Calibration | null) {
@@ -58,6 +68,8 @@ export function TrackingPanel({
   calibration,
   canUndo,
   canRedo,
+  assistedSession,
+  assistedAverageProcessingMs,
   onCreateTrack,
   onRenameTrack,
   onDeleteTrack,
@@ -71,6 +83,12 @@ export function TrackingPanel({
   onSeekSample,
   onUndo,
   onRedo,
+  onBeginAssistedSeed,
+  onCancelAssistedSeed,
+  onStartAssisted,
+  onStopAssisted,
+  onAcceptAssisted,
+  onDiscardAssisted,
 }: TrackingPanelProps) {
   const [newName, setNewName] = useState('Ball')
   const [renameInput, setRenameInput] = useState(activeTrack?.name ?? '')
@@ -93,6 +111,7 @@ export function TrackingPanel({
 
   const currentCoordinates =
     currentSample === null ? null : coordinateText(currentSample, calibration)
+  const assistedInteractionActive = assistedSession.status !== 'idle'
 
   return (
     <section className="inspector__section tracking-panel">
@@ -148,6 +167,7 @@ export function TrackingPanel({
             <button
               aria-pressed={mode === 'mark'}
               className={mode === 'mark' ? 'calibration-action calibration-action--primary' : 'calibration-action'}
+              disabled={assistedInteractionActive}
               onClick={mode === 'mark' ? onCancelInteraction : onBeginMark}
               type="button"
             >
@@ -156,7 +176,7 @@ export function TrackingPanel({
             <button
               aria-pressed={mode === 'edit'}
               className={mode === 'edit' ? 'calibration-action calibration-action--primary' : 'calibration-action'}
-              disabled={currentSample === null}
+              disabled={currentSample === null || assistedInteractionActive}
               onClick={mode === 'edit' ? onCancelInteraction : onBeginEdit}
               type="button"
             >
@@ -167,11 +187,24 @@ export function TrackingPanel({
           <label className="tracking-advance">
             <input
               checked={advanceAfterMark}
+              disabled={assistedInteractionActive}
               onChange={(event) => onAdvanceAfterMarkChange(event.target.checked)}
               type="checkbox"
             />
             Advance after mark (approx. 30 fps)
           </label>
+
+          <AssistedTrackingControls
+            averageProcessingMs={assistedAverageProcessingMs}
+            hasCurrentSample={currentSample !== null}
+            onAccept={onAcceptAssisted}
+            onBeginSeed={onBeginAssistedSeed}
+            onCancelSeed={onCancelAssistedSeed}
+            onDiscard={onDiscardAssisted}
+            onStart={onStartAssisted}
+            onStop={onStopAssisted}
+            session={assistedSession}
+          />
 
           <label className="tracking-trail">
             <span>Trail</span>
@@ -214,7 +247,7 @@ export function TrackingPanel({
             )}
             <button
               className="tracking-delete-sample"
-              disabled={currentSample === null}
+              disabled={currentSample === null || assistedInteractionActive}
               onClick={onDeleteCurrentSample}
               type="button"
             >

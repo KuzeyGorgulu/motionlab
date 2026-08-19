@@ -123,6 +123,53 @@ export function insertOrReplaceTrackSample(
   }
 }
 
+export type TrackSampleBatchResult =
+  | { ok: true; track: Track }
+  | { ok: false; reason: string }
+
+/**
+ * Inserts an assisted run atomically. Unlike manual upsert, a batch never
+ * replaces an existing frame or sample identity: any conflict rejects the
+ * entire proposal set and leaves the confirmed track unchanged.
+ */
+export function insertTrackSamplesBatch(
+  track: Track,
+  samples: readonly TrackSample[],
+): TrackSampleBatchResult {
+  if (samples.length === 0) return { ok: true, track }
+
+  const sampleIds = new Set(track.samples.map((sample) => sample.id))
+  const frameKeys = new Set(
+    track.samples.map((sample) => frameReferenceKey(sample.frame)),
+  )
+
+  for (const sample of samples) {
+    if (validateTrackSample(sample).length > 0) {
+      return { ok: false, reason: 'An assisted sample is invalid.' }
+    }
+    if (sampleIds.has(sample.id)) {
+      return { ok: false, reason: `Sample identity ${sample.id} already exists.` }
+    }
+    const frameKey = frameReferenceKey(sample.frame)
+    if (frameKeys.has(frameKey)) {
+      return {
+        ok: false,
+        reason: 'A confirmed sample already exists at a proposed frame.',
+      }
+    }
+    sampleIds.add(sample.id)
+    frameKeys.add(frameKey)
+  }
+
+  const nextTrack = {
+    ...track,
+    samples: orderTrackSamples([...track.samples, ...samples]),
+  }
+  return validateTrack(nextTrack).length === 0
+    ? { ok: true, track: nextTrack }
+    : { ok: false, reason: 'The assisted sample batch would invalidate the track.' }
+}
+
 export function updateTrackSamplePosition(
   track: Track,
   sampleId: string,

@@ -2,6 +2,7 @@ import {
   deleteTrack,
   deleteTrackSample,
   findTrack,
+  insertTrackSamplesBatch,
   insertOrReplaceTrackSample,
   renameTrack,
   updateTrackSamplePosition,
@@ -21,6 +22,7 @@ export type TrackingAction =
   | { type: 'rename-track'; id: string; name: string }
   | { type: 'delete-track'; id: string }
   | { type: 'upsert-sample'; trackId: string; sample: TrackSample }
+  | { type: 'insert-samples-batch'; trackId: string; samples: TrackSample[] }
   | {
       type: 'update-sample-position'
       trackId: string
@@ -120,6 +122,14 @@ export function trackingHistoryReducer(
         updateTrack(history.present, action.trackId, (track) =>
           insertOrReplaceTrackSample(track, action.sample),
         ),
+      )
+    case 'insert-samples-batch':
+      return commit(
+        history,
+        updateTrack(history.present, action.trackId, (track) => {
+          const result = insertTrackSamplesBatch(track, action.samples)
+          return result.ok ? result.track : track
+        }),
       )
     case 'update-sample-position':
       return commit(

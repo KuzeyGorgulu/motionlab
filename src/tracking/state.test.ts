@@ -88,6 +88,66 @@ describe('tracking history reducer', () => {
     expect(history.present.tracks[0]?.samples[0]?.nativePosition).toEqual({ x: 80, y: 90 })
   })
 
+  it('accepts an assisted batch as one undo and redo mutation', () => {
+    let history = trackingHistoryReducer(createTrackingHistory(), {
+      type: 'create-track',
+      track: ball,
+    })
+    history = trackingHistoryReducer(history, {
+      type: 'upsert-sample',
+      trackId: ball.id,
+      sample,
+    })
+    const proposals = [
+      createTrackSample('assisted-1', createFrameReference(2), { x: 20, y: 30 })!,
+      createTrackSample('assisted-2', createFrameReference(3), { x: 30, y: 40 })!,
+    ]
+    const beforeBatch = history.present
+    const pastCount = history.past.length
+
+    history = trackingHistoryReducer(history, {
+      type: 'insert-samples-batch',
+      trackId: ball.id,
+      samples: proposals,
+    })
+    expect(history.past).toHaveLength(pastCount + 1)
+    expect(history.present.tracks[0]?.samples.map((item) => item.id)).toEqual([
+      sample.id,
+      'assisted-1',
+      'assisted-2',
+    ])
+
+    history = trackingHistoryReducer(history, { type: 'undo' })
+    expect(history.present).toEqual(beforeBatch)
+    history = trackingHistoryReducer(history, { type: 'redo' })
+    expect(history.present.tracks[0]?.samples.map((item) => item.id)).toEqual([
+      sample.id,
+      'assisted-1',
+      'assisted-2',
+    ])
+  })
+
+  it('rejects a conflicting assisted batch without creating history', () => {
+    let history = trackingHistoryReducer(createTrackingHistory(), {
+      type: 'create-track',
+      track: ball,
+    })
+    history = trackingHistoryReducer(history, {
+      type: 'upsert-sample',
+      trackId: ball.id,
+      sample,
+    })
+    const before = history
+    history = trackingHistoryReducer(history, {
+      type: 'insert-samples-batch',
+      trackId: ball.id,
+      samples: [
+        createTrackSample('conflict', createFrameReference(1), { x: 99, y: 99 })!,
+      ],
+    })
+    expect(history).toBe(before)
+  })
+
   it('deletes the current sample but preserves its track', () => {
     let history = trackingHistoryReducer(createTrackingHistory(), {
       type: 'create-track',

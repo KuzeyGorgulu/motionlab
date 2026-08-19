@@ -112,16 +112,69 @@ Acceptance criteria:
 
 ## Week 3: assistance, export, and hardening
 
-### Phase 7 — Assisted tracking
+### Phase 7 — Assisted tracking (complete)
 
 Prototype local browser-side tracking behind a replaceable worker-friendly interface. Manual tracking and correction remain first-class.
 
 Acceptance criteria:
 
 - The user explicitly seeds a target and can stop/restart assistance.
-- Results are editable manual-quality track points, not a separate locked format.
-- Failures are visible and do not overwrite confirmed points silently.
-- Performance is measured on representative video; large work does not freeze the UI unnecessarily.
+- A forward-only, stable-template, bounded-search tracker runs locally behind a replaceable worker-compatible interface.
+- Suggestions remain transient, render with dashed/hollow non-confirmed styling, and can be accepted or discarded explicitly.
+- Results are ordinary editable track points, not a separate locked format; one accepted run is one undo/redo mutation.
+- Low texture, ambiguity, poor matches, invalid frames, repeated identities, boundaries, worker/seek failures, video end, and confirmed-sample conflicts stop visibly instead of guessing.
+- Existing confirmed points are protected, and stale asynchronous work cannot mutate a newer video, track, or assisted session.
+- Processed-frame, elapsed-time, and average-ms/frame instrumentation is displayed for representative-video measurement; no fabricated benchmark is claimed.
+- Manual tracking, calibration, kinematics, synchronized graphs, local-only privacy, strict TypeScript, tests, and production worker build remain intact.
+
+### Phase 7.1 — Adaptive assisted-tracking robustness (complete)
+
+Scale stable-template context and bounded movement allowance with native resolution while preserving Phase 7's workflow and ordinary `TrackSample` output.
+
+Acceptance criteria:
+
+- Pure deterministic geometry produces bounded odd templates and search radii across landscape, portrait, unusually shaped, very small, and very large videos.
+- A wider 4K seed can use an object's boundary and markings even when the clicked physical center is locally flat; genuinely flat context still stops.
+- Matched template displacement moves the previous physical anchor exactly, without drifting the reported measurement toward a strong sub-feature.
+- Bounded coarse-to-fine scoring, explicit seed-edge rejection, safe search clipping, and an overflow guard retain integer-pixel deterministic results without full-frame search.
+- Synthetic tests cover the observed flat-center ball failure, adaptive radius, out-of-radius stopping, boundary matches, ambiguity, deterministic refinement, and input-buffer immutability.
+
+### Phase 7.2 — Fast-motion coarse-to-fine assisted tracking (complete)
+
+Increase bounded high-resolution motion coverage with a true reduced-resolution search and native-pixel refinement while retaining Phase 7's scientific and session-safety boundaries.
+
+Acceptance criteria:
+
+- The first assisted frame can recover a large image-confirmed displacement without motion history.
+- Pure resolution policy derives bounded reduction scale, coarse radius, native-equivalent coverage, and refinement radius for common, very small, and very large videos.
+- Box-averaged coarse matching retains spatially distinct hypotheses; final quality and ambiguity use full-resolution one-pixel candidates.
+- Timestamp-scaled observed motion may center the next ROI but never creates a sample, and invalid guidance falls back safely.
+- Synthetic regressions cover fast motion, missing targets, range exhaustion, repeated patterns, irregular timing, acceleration, reversal, frame edges, deterministic output, and operation bounds.
+- Worker isolation, protected samples, cancellation, transient proposals, atomic acceptance, undo/redo, stable templates, and dependency-free local processing remain unchanged.
+
+### Phase 7.3 — Spatial ambiguity clustering (complete)
+
+Group nearby full-resolution refined hypotheses into resolution-aware match basins so local offsets around one target do not masquerade as independent alternatives.
+
+Acceptance criteria:
+
+- At most eight refined hypothesis representatives are clustered deterministically in native-pixel space with a documented bounded geometry-aware radius.
+- Each basin reports its best observed integer-pixel candidate; no averaging, subpixel inference, smoothing, or predicted observation is introduced.
+- Confidence compares the best basin with the second-best genuinely separate basin, while distant repeated targets remain ambiguous and stop safely.
+- Synthetic regressions cover same-basin offsets, refinement convergence, exact threshold behavior, 720p through 4K scaling, a soft-edged basketball-style target, and separated duplicate targets.
+- Motion guidance remains an ROI hint only; worker isolation, protected samples, cancellation, transient proposals, atomic acceptance, ordinary sample output, and dependency-free local processing remain unchanged.
+
+### Phase 7.4 — Robust tracking continuity and recovery (complete)
+
+Survive short low-confidence runs without weakening image acceptance or inventing measurements, while preserving a stable seed reference and bounded worker execution.
+
+Acceptance criteria:
+
+- Low-confidence, ambiguity, missing-target, and range results advance without a proposal through three bounded recovery attempts; invalid worker/frame/state results remain hard failures.
+- Recovery projects the most recent reliable motion to each later timestamp and expands only the predicted-center search to approximately 1.35×, 1.7×, and 2× normal radius, capped at 512 native pixels.
+- Reacquisition creates one ordinary transient sample at the actual later timestamp, resets normal geometry, and never fills missed timestamps.
+- A strictly gated 10% current-template blend is explicitly committed only after a high-confidence valid proposal; the immutable seed is compared during recovery and spatial disagreement remains ambiguous.
+- Internal bounded diagnostics, worker cancellation, generation guards, protected samples, atomic acceptance, Phase 7.2 coarse-to-fine matching, and Phase 7.3 basin clustering remain intact.
 
 ### Phase 8 — Export, polish, and end-to-end tests
 

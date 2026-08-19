@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 
 import { hitTestTrackSample } from '../tracking/hitTest'
-import { createTrack, createTrackSample } from '../tracking/model'
+import {
+  createTrack,
+  createTrackSample,
+  insertTrackSamplesBatch,
+} from '../tracking/model'
 import { activeTrack, currentFrameTrackSample } from '../tracking/selectors'
 import {
   createTrackingHistory,
@@ -52,6 +56,9 @@ export interface TrackingWorkspaceController {
   selectTrack: (id: string) => void
   beginMark: () => void
   beginEdit: () => void
+  beginSeed: () => void
+  confirmSeed: (point: Point) => TrackSample | null
+  insertSampleBatch: (samples: readonly TrackSample[]) => boolean
   cancelInteraction: () => void
   setTrailMode: (mode: TrailMode) => void
   setAdvanceAfterMark: (enabled: boolean) => void
@@ -227,6 +234,40 @@ export function useTrackingWorkspace(
     })
   }, [])
 
+  const confirmSeed = useCallback(
+    (point: Point): TrackSample | null => {
+      if (selectedTrack === null || mode !== 'seed') return null
+      if (currentSample !== null) return currentSample
+
+      const sample = createTrackSample(
+        `sample-${nextSampleId.current}`,
+        currentFrame,
+        point,
+      )
+      if (sample === null) return null
+      nextSampleId.current += 1
+      dispatch({ type: 'upsert-sample', trackId: selectedTrack.id, sample })
+      return sample
+    },
+    [currentFrame, currentSample, mode, selectedTrack],
+  )
+
+  const insertSampleBatch = useCallback(
+    (samples: readonly TrackSample[]): boolean => {
+      if (selectedTrack === null || samples.length === 0) return false
+      const result = insertTrackSamplesBatch(selectedTrack, samples)
+      if (!result.ok || result.track === selectedTrack) return false
+      setDrag(null)
+      dispatch({
+        type: 'insert-samples-batch',
+        trackId: selectedTrack.id,
+        samples: [...samples],
+      })
+      return true
+    },
+    [selectedTrack],
+  )
+
   return {
     tracks: history.present.tracks,
     activeTrack: selectedTrack,
@@ -260,6 +301,14 @@ export function useTrackingWorkspace(
         setMode('edit')
       }
     },
+    beginSeed: () => {
+      if (selectedTrack !== null) {
+        setDrag(null)
+        setMode('seed')
+      }
+    },
+    confirmSeed,
+    insertSampleBatch,
     cancelInteraction,
     setTrailMode,
     setAdvanceAfterMark,

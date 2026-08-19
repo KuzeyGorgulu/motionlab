@@ -8,6 +8,7 @@ import {
   deleteTrackSample,
   findTrack,
   insertOrReplaceTrackSample,
+  insertTrackSamplesBatch,
   renameTrack,
   updateTrackSamplePosition,
   validateTrack,
@@ -79,6 +80,45 @@ describe('track model', () => {
       'middle',
       'later',
     ])
+  })
+
+  it('inserts an assisted sample batch chronologically without mutating the input', () => {
+    const track = insertOrReplaceTrackSample(
+      trackFixture(),
+      sampleFixture('seed', 1),
+    )
+    const proposals = [
+      sampleFixture('later', 3, 30),
+      sampleFixture('middle', 2, 20),
+    ]
+    const before = structuredClone(proposals)
+    const result = insertTrackSamplesBatch(track, proposals)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.track.samples.map((item) => item.id)).toEqual([
+      'seed',
+      'middle',
+      'later',
+    ])
+    expect(proposals).toEqual(before)
+  })
+
+  it('rejects a whole assisted batch when a frame or identity conflicts', () => {
+    const track = insertOrReplaceTrackSample(
+      trackFixture(),
+      sampleFixture('confirmed', 2),
+    )
+    const frameConflict = insertTrackSamplesBatch(track, [
+      sampleFixture('proposal', 2, 50),
+    ])
+    const identityConflict = insertTrackSamplesBatch(track, [
+      sampleFixture('confirmed', 3, 60),
+    ])
+
+    expect(frameConflict.ok).toBe(false)
+    expect(identityConflict.ok).toBe(false)
+    expect(track.samples).toEqual([sampleFixture('confirmed', 2)])
   })
 
   it('keeps adjacent frame buckets as separate samples', () => {

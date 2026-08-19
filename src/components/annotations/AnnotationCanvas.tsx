@@ -12,6 +12,8 @@ import type {
   CalibrationOverlayDraft,
 } from '../../calibration/types'
 import { renderTrackLayer } from '../../tracking/render'
+import { renderAssistedTrackingLayer } from '../../assistedTracking/render'
+import type { AssistedSuggestion } from '../../assistedTracking/types'
 import type {
   Track,
   TrackDragPreview,
@@ -36,6 +38,9 @@ export interface AnnotationCanvasProps {
   trackingMode: TrackingMode
   trailMode: TrailMode
   trackingDragPreview: TrackDragPreview | null
+  assistedSeedPosition: Point | null
+  assistedSuggestions: AssistedSuggestion[]
+  assistedColor: string | null
   currentTime: number
   onPointerDown: (point: Point, hitTolerance: number) => boolean
   onPointerMove: (point: Point | null) => void
@@ -77,6 +82,9 @@ export function AnnotationCanvas({
   trackingMode,
   trailMode,
   trackingDragPreview,
+  assistedSeedPosition,
+  assistedSuggestions,
+  assistedColor,
   currentTime,
   onPointerDown,
   onPointerMove,
@@ -102,6 +110,12 @@ export function AnnotationCanvas({
       trailMode,
       dragPreview: trackingDragPreview,
     })
+    renderAssistedTrackingLayer(context, {
+      seedPosition: assistedSeedPosition,
+      suggestions: assistedSuggestions,
+      color: assistedColor,
+      displayScale,
+    })
     renderAnnotationLayer(context, annotations, {
       selectedId,
       draft,
@@ -111,6 +125,9 @@ export function AnnotationCanvas({
     })
   }, [
     activeTool,
+    assistedColor,
+    assistedSeedPosition,
+    assistedSuggestions,
     activeTrackId,
     annotations,
     calibration,
