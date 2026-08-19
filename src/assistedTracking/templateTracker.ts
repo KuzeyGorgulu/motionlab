@@ -704,9 +704,13 @@ export function locateTemplate(
   searchRegion: Pick<
     SearchPixelRegion,
     'origin' | 'expectedTemplateCenter' | 'searchCenter' | 'geometry'
-  > & Partial<Pick<SearchPixelRegion, 'recoveryAttempt'>>,
+  > & Partial<
+    Pick<SearchPixelRegion, 'recoveryAttempt' | 'includeObservationCenter'>
+  >,
 ): TrackingMatch {
   const recoveryAttempt = searchRegion.recoveryAttempt ?? 0
+  const includeObservationCenter =
+    searchRegion.includeObservationCenter ?? recoveryAttempt === 0
   if (
     !Number.isFinite(searchRegion.expectedTemplateCenter.x) ||
     !Number.isFinite(searchRegion.expectedTemplateCenter.y) ||
@@ -738,7 +742,7 @@ export function locateTemplate(
         searchRegion.geometry.nativeSearchRadius &&
       Math.abs(result.matchedCenter.y - searchRegion.searchCenter.y) <=
         searchRegion.geometry.nativeSearchRadius
-  const withinObservationCenter = recoveryAttempt === 0 &&
+  const withinObservationCenter = includeObservationCenter &&
       Math.abs(result.matchedCenter.x - searchRegion.expectedTemplateCenter.x) <=
         searchRegion.geometry.nativeSearchRadius &&
       Math.abs(result.matchedCenter.y - searchRegion.expectedTemplateCenter.y) <=

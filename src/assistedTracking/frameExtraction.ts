@@ -18,6 +18,8 @@ export interface PixelRect {
   height: number
 }
 
+export type TrackingSearchRegionMode = 'predicted' | 'corridor'
+
 export type FrameExtractionResult =
   | { ok: true; region: PixelRegion }
   | { ok: false; reason: string }
@@ -131,18 +133,21 @@ export function searchRectForTracking(
   searchCenter: Point,
   geometry: AssistedTrackingGeometry,
   recoveryAttempt: number,
+  mode: TrackingSearchRegionMode =
+    recoveryAttempt > 0 ? 'predicted' : 'corridor',
 ): PixelRect | null {
   if (
     !isValidAssistedTrackingSearchGeometry(geometry) ||
     !Number.isInteger(recoveryAttempt) ||
     recoveryAttempt < 0 ||
-    recoveryAttempt > MAX_CONSECUTIVE_MISSES
+    recoveryAttempt > MAX_CONSECUTIVE_MISSES ||
+    (mode !== 'predicted' && mode !== 'corridor')
   ) {
     return null
   }
   return searchRectForPoints(
     nativeSize,
-    recoveryAttempt === 0 ? [anchorPoint, searchCenter] : [searchCenter],
+    mode === 'corridor' ? [anchorPoint, searchCenter] : [searchCenter],
     geometry.templateSize,
     geometry.nativeSearchRadius + geometry.refinementRadius,
   )
@@ -229,6 +234,8 @@ export class VideoFrameExtractor {
     searchCenter: Point,
     geometry: AssistedTrackingGeometry,
     recoveryAttempt = 0,
+    mode: TrackingSearchRegionMode =
+      recoveryAttempt > 0 ? 'predicted' : 'corridor',
   ): SearchFrameExtractionResult {
     if (!isValidAssistedTrackingSearchGeometry(geometry)) {
       return {
@@ -242,6 +249,7 @@ export class VideoFrameExtractor {
       searchCenter,
       geometry,
       recoveryAttempt,
+      mode,
     )
     if (rect === null) {
       return { ok: false, reason: 'The target search area has left the video frame.' }
@@ -262,6 +270,7 @@ export class VideoFrameExtractor {
             },
             geometry,
             recoveryAttempt,
+            includeObservationCenter: mode === 'corridor',
           },
         }
       : extracted

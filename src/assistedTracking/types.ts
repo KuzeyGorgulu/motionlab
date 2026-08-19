@@ -19,6 +19,7 @@ export interface SearchPixelRegion extends PixelRegion {
   searchCenter: Point
   geometry: AssistedTrackingGeometry
   recoveryAttempt: number
+  includeObservationCenter: boolean
 }
 
 export interface AssistedTrackingGeometry {
@@ -45,6 +46,14 @@ export interface MatchDiagnostics {
 }
 
 export type AssistedTemplateSource = 'current' | 'seed'
+export type AssistedSearchPass = 'primary' | 'fallback'
+
+export interface AssistedSearchBounds {
+  x: number
+  y: number
+  width: number
+  height: number
+}
 
 export type TemplateMatch =
   | {
@@ -118,7 +127,15 @@ export interface AssistedFrameDiagnostic {
   frameKey: string
   time: number
   predictedPosition: Point
+  previousAcceptedPosition: Point
+  recentDisplacement: Point | null
+  recentVelocity: Point | null
   searchRadius: number
+  primarySearchBounds: AssistedSearchBounds
+  fallbackSearchBounds: AssistedSearchBounds | null
+  primaryConfidence: number | null
+  fallbackConfidence: number | null
+  searchPass: AssistedSearchPass
   bestMatchPosition: Point | null
   confidence: number | null
   candidateClusterCount: number | null

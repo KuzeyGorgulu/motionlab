@@ -13,6 +13,8 @@ export interface MotionSearchHint {
   searchCenter: Point
   usedMotionGuidance: boolean
   predictedDisplacement: Point | null
+  recentDisplacement: Point | null
+  recentVelocity: Point | null
   reason: string
 }
 
@@ -34,6 +36,8 @@ function unguided(last: MotionObservation, reason: string): MotionSearchHint {
     searchCenter: { ...last.position },
     usedMotionGuidance: false,
     predictedDisplacement: null,
+    recentDisplacement: null,
+    recentVelocity: null,
     reason,
   }
 }
@@ -81,8 +85,18 @@ export function motionSearchHint(
     return unguided(last, 'unsupported-time-scale')
   }
 
-  let predictedX = (last.position.x - previous.position.x) * timeScale
-  let predictedY = (last.position.y - previous.position.y) * timeScale
+  const recentDisplacement = {
+    x: last.position.x - previous.position.x,
+    y: last.position.y - previous.position.y,
+  }
+  const recentVelocity = {
+    x: recentDisplacement.x / previousInterval,
+    y: recentDisplacement.y / previousInterval,
+  }
+  if (!validPoint(recentVelocity)) return unguided(last, 'invalid-motion')
+
+  let predictedX = recentDisplacement.x * timeScale
+  let predictedY = recentDisplacement.y * timeScale
   const magnitude = Math.hypot(predictedX, predictedY)
   if (!Number.isFinite(magnitude)) return unguided(last, 'invalid-motion')
   if (magnitude > maximumHintDistance) {
@@ -91,24 +105,49 @@ export function motionSearchHint(
     predictedY *= boundedScale
   }
 
-  const searchCenter = {
+  let searchCenter = {
     x: last.position.x + predictedX,
     y: last.position.y + predictedY,
   }
   const frameMargin = maximumHintDistance
+  const lastInsideFrame =
+    last.position.x >= 0 &&
+    last.position.y >= 0 &&
+    last.position.x <= nativeSize.width - 1 &&
+    last.position.y <= nativeSize.height - 1
   if (
-    searchCenter.x < -frameMargin ||
-    searchCenter.y < -frameMargin ||
-    searchCenter.x > nativeSize.width - 1 + frameMargin ||
-    searchCenter.y > nativeSize.height - 1 + frameMargin
+    !lastInsideFrame &&
+    (searchCenter.x < -frameMargin ||
+      searchCenter.y < -frameMargin ||
+      searchCenter.x > nativeSize.width - 1 + frameMargin ||
+      searchCenter.y > nativeSize.height - 1 + frameMargin)
   ) {
     return unguided(last, 'prediction-outside-frame')
+  }
+
+  let clampedToFrame = false
+  if (lastInsideFrame) {
+    const clampedCenter = {
+      x: Math.max(0, Math.min(nativeSize.width - 1, searchCenter.x)),
+      y: Math.max(0, Math.min(nativeSize.height - 1, searchCenter.y)),
+    }
+    clampedToFrame =
+      clampedCenter.x !== searchCenter.x || clampedCenter.y !== searchCenter.y
+    searchCenter = clampedCenter
+    predictedX = searchCenter.x - last.position.x
+    predictedY = searchCenter.y - last.position.y
   }
 
   return {
     searchCenter,
     usedMotionGuidance: true,
     predictedDisplacement: { x: predictedX, y: predictedY },
-    reason: magnitude > maximumHintDistance ? 'bounded-motion' : 'observed-motion',
+    recentDisplacement,
+    recentVelocity,
+    reason: clampedToFrame
+      ? 'prediction-clamped-to-frame'
+      : magnitude > maximumHintDistance
+        ? 'bounded-motion'
+        : 'observed-motion',
   }
 }

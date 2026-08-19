@@ -7,7 +7,11 @@ import {
 } from 'react'
 
 import { VideoFrameExtractor } from '../assistedTracking/frameExtraction'
-import { assistedTrackingGeometryFor } from '../assistedTracking/geometry'
+import { adaptiveSearchPolicyFor } from '../assistedTracking/adaptiveSearch'
+import {
+  ASSISTED_GEOMETRY_LIMITS,
+  assistedTrackingGeometryFor,
+} from '../assistedTracking/geometry'
 import { motionSearchHint } from '../assistedTracking/motionGuidance'
 import {
   recoveryAttemptFor,
@@ -78,6 +82,32 @@ function diagnosticMatchPosition(
     x: center.x - expectedTemplateCenter.x,
     y: center.y - expectedTemplateCenter.y,
   })
+}
+
+function searchBounds(region: {
+  origin: { x: number; y: number }
+  width: number
+  height: number
+}) {
+  return {
+    x: region.origin.x,
+    y: region.origin.y,
+    width: region.width,
+    height: region.height,
+  }
+}
+
+function preferredRecoverableMiss(
+  primary: Extract<TrackingMatch, { status: 'low-confidence' }>,
+  fallback: Extract<TrackingMatch, { status: 'low-confidence' }>,
+) {
+  if (fallback.confidence !== primary.confidence) {
+    return fallback.confidence > primary.confidence ? fallback : primary
+  }
+  return (fallback.score ?? Number.POSITIVE_INFINITY) <
+      (primary.score ?? Number.POSITIVE_INFINITY)
+    ? fallback
+    : primary
 }
 
 export function useAssistedTracking({
@@ -339,62 +369,141 @@ export function useAssistedTracking({
       lastProcessedFrame = frame
 
       const recoveryAttempt = recoveryAttemptFor(consecutiveMisses)
-      const searchGeometry = recoveryGeometryFor(
-        runSession.seed.geometry,
-        consecutiveMisses,
+      const searchHint = motionSearchHint(
+        motionObservations,
+        seekResult.mediaTime,
+        runSession.seed.nativeSize,
+        ASSISTED_GEOMETRY_LIMITS.maximumRecoveryNativeSearchRadius,
       )
-      if (recoveryAttempt === null || searchGeometry === null) {
+      const adaptivePolicy = searchHint === null
+        ? null
+        : adaptiveSearchPolicyFor(
+            runSession.seed.geometry,
+            searchHint.predictedDisplacement,
+          )
+      const primaryGeometry = adaptivePolicy === null
+        ? null
+        : recoveryGeometryFor(
+            adaptivePolicy.primaryGeometry,
+            consecutiveMisses,
+          )
+      const fallbackGeometry = adaptivePolicy === null
+        ? null
+        : recoveryGeometryFor(
+            adaptivePolicy.fallbackGeometry,
+            consecutiveMisses,
+          )
+      if (
+        recoveryAttempt === null ||
+        searchHint === null ||
+        primaryGeometry === null ||
+        fallbackGeometry === null
+      ) {
         dispatch({
           type: 'fail',
           sessionId,
-          reason: 'The assisted recovery-search geometry is invalid.',
+          reason: 'The assisted motion or recovery-search geometry is invalid.',
           elapsedMs: elapsedSince(startedAt, elapsedMs),
         })
         return
       }
 
-      const searchHint = motionSearchHint(
-        motionObservations,
-        seekResult.mediaTime,
-        runSession.seed.nativeSize,
-        searchGeometry.nativeSearchRadius,
-      )
-      if (searchHint === null) {
-        dispatch({
-          type: 'fail',
-          sessionId,
-          reason: 'The assisted motion-search history is invalid.',
-          elapsedMs: elapsedSince(startedAt, elapsedMs),
-        })
-        return
-      }
-      const extracted = extractor().extractSearch(
+      const primaryExtraction = extractor().extractSearch(
         video,
         previousSample.nativePosition,
         searchHint.searchCenter,
-        searchGeometry,
+        primaryGeometry,
         recoveryAttempt,
+        searchHint.usedMotionGuidance ? 'predicted' : 'corridor',
       )
-      if (!extracted.ok) {
+      if (!primaryExtraction.ok) {
         dispatch({
           type: 'fail',
           sessionId,
-          reason: extracted.reason,
+          reason: primaryExtraction.reason,
           elapsedMs: elapsedSince(startedAt, elapsedMs),
         })
         return
       }
-      const match = await tracker().locate(extracted.region)
+      const primaryMatch = await tracker().locate(primaryExtraction.region)
       if (generation !== generationRef.current || abortController.signal.aborted) return
+      let match = primaryMatch
+      let selectedRegion = primaryExtraction.region
+      let selectedGeometry = primaryGeometry
+      let searchPass: AssistedFrameDiagnostic['searchPass'] = 'primary'
+      let fallbackBounds: AssistedFrameDiagnostic['fallbackSearchBounds'] = null
+      let fallbackConfidence: number | null = null
+
+      if (primaryMatch.status === 'low-confidence') {
+        const fallbackExtraction = extractor().extractSearch(
+          video,
+          previousSample.nativePosition,
+          searchHint.searchCenter,
+          fallbackGeometry,
+          recoveryAttempt,
+          'corridor',
+        )
+        if (!fallbackExtraction.ok) {
+          dispatch({
+            type: 'fail',
+            sessionId,
+            reason: fallbackExtraction.reason,
+            elapsedMs: elapsedSince(startedAt, elapsedMs),
+          })
+          return
+        }
+        fallbackBounds = searchBounds(fallbackExtraction.region)
+        const fallbackMatch = await tracker().locate(fallbackExtraction.region)
+        if (
+          generation !== generationRef.current ||
+          abortController.signal.aborted
+        ) {
+          return
+        }
+        fallbackConfidence = fallbackMatch.status === 'invalid-frame'
+          ? null
+          : fallbackMatch.confidence
+        if (
+          fallbackMatch.status === 'low-confidence' &&
+          primaryMatch.status === 'low-confidence'
+        ) {
+          match = preferredRecoverableMiss(primaryMatch, fallbackMatch)
+          if (match === fallbackMatch) {
+            selectedRegion = fallbackExtraction.region
+            selectedGeometry = fallbackGeometry
+            searchPass = 'fallback'
+          }
+        } else {
+          match = fallbackMatch
+          selectedRegion = fallbackExtraction.region
+          selectedGeometry = fallbackGeometry
+          searchPass = 'fallback'
+        }
+      }
+
       const diagnosticBase = {
         frameKey,
         time: seekResult.mediaTime,
         predictedPosition: { ...searchHint.searchCenter },
-        searchRadius: searchGeometry.nativeSearchRadius,
+        previousAcceptedPosition: { ...previousSample.nativePosition },
+        recentDisplacement: searchHint.recentDisplacement === null
+          ? null
+          : { ...searchHint.recentDisplacement },
+        recentVelocity: searchHint.recentVelocity === null
+          ? null
+          : { ...searchHint.recentVelocity },
+        searchRadius: selectedGeometry.nativeSearchRadius,
+        primarySearchBounds: searchBounds(primaryExtraction.region),
+        fallbackSearchBounds: fallbackBounds,
+        primaryConfidence: primaryMatch.status === 'invalid-frame'
+          ? null
+          : primaryMatch.confidence,
+        fallbackConfidence,
+        searchPass,
         bestMatchPosition: diagnosticMatchPosition(
           match,
           previousSample,
-          extracted.region.expectedTemplateCenter,
+          selectedRegion.expectedTemplateCenter,
         ),
         confidence: match.status === 'invalid-frame' ? null : match.confidence,
         candidateClusterCount:

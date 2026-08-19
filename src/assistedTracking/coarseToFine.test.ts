@@ -108,6 +108,7 @@ function centeredSearch(
       },
       geometry,
       recoveryAttempt: 0,
+      includeObservationCenter: true,
     },
   }
 }
@@ -371,6 +372,7 @@ describe('fast-motion frame boundaries', () => {
       searchCenter: previous,
       geometry: GEOMETRY_4K,
       recoveryAttempt: 0,
+      includeObservationCenter: true,
     })
 
     expect(result.status).toBe('match')
@@ -399,6 +401,7 @@ describe('fast-motion frame boundaries', () => {
       searchCenter: previous,
       geometry: GEOMETRY_4K,
       recoveryAttempt: 0,
+      includeObservationCenter: true,
     })
     expect(result.status).toBe('low-confidence')
   })

@@ -1585,6 +1585,63 @@ input:disabled {
   line-height: 1.45;
 }
 
+.assisted-tracking > .assisted-tracking__limitation {
+  margin-top: 4px;
+  color: #7b888f;
+}
+
+.assisted-tracking-notice {
+  width: min(440px, calc(100vw - 32px));
+  padding: 20px;
+  border: 1px solid #3a494f;
+  border-radius: 5px;
+  color: #b7c2c8;
+  background: #11191d;
+  box-shadow: 0 18px 60px rgb(0 0 0 / 45%);
+}
+
+.assisted-tracking-notice::backdrop {
+  background: rgb(5 9 11 / 72%);
+}
+
+.assisted-tracking-notice__heading span {
+  display: inline-block;
+  padding: 2px 6px;
+  border: 1px solid #554b2d;
+  border-radius: 2px;
+  color: #d2b86e;
+  background: #211d12;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.assisted-tracking-notice h2 {
+  margin: 10px 0 0;
+  color: #dce4e8;
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.assisted-tracking-notice p {
+  margin: 10px 0 0;
+  color: #89969d;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.assisted-tracking-notice__actions {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.assisted-tracking-notice__actions .button {
+  min-width: 88px;
+}
+
 .assisted-tracking__status {
   margin-top: 8px;
   display: grid;

@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from 'react'
 
 import { deriveTrackKinematics } from '../../analysis/kinematics'
 import {
@@ -18,6 +25,7 @@ import { AnalysisPanel } from '../analysis/AnalysisPanel'
 import { KinematicsPanel } from '../analysis/KinematicsPanel'
 import { CalibrationPanel } from '../calibration/CalibrationPanel'
 import { FilmIcon, TrashIcon } from '../Icons'
+import { AssistedTrackingNotice } from '../tracking/AssistedTrackingNotice'
 import { TrackingPanel } from '../tracking/TrackingPanel'
 import { TransportControls } from './TransportControls'
 import { VideoImportButton } from './VideoImportButton'
@@ -27,6 +35,8 @@ import { VideoStage } from './VideoStage'
 interface VideoWorkspaceProps {
   source: LocalVideoSource
   importError: string | null
+  assistedTrackingNoticeAcknowledged: boolean
+  onAcknowledgeAssistedTrackingNotice: () => void
   onSelectVideo: (file: File) => void
   onRemoveVideo: () => void
 }
@@ -45,6 +55,8 @@ function isEditableOrInteractive(target: EventTarget | null): boolean {
 export function VideoWorkspace({
   source,
   importError,
+  assistedTrackingNoticeAcknowledged,
+  onAcknowledgeAssistedTrackingNotice,
   onSelectVideo,
   onRemoveVideo,
 }: VideoWorkspaceProps) {
@@ -65,6 +77,8 @@ export function VideoWorkspace({
     reduceAnalysisPanelState,
     INITIAL_ANALYSIS_PANEL_STATE,
   )
+  const [showAssistedTrackingNotice, setShowAssistedTrackingNotice] =
+    useState(false)
   const controlsEnabled = controller.metadata !== null && controller.mediaError === null
   const trackAnalysis = useMemo(
     () => tracking.activeTrack === null
@@ -158,7 +172,7 @@ export function VideoWorkspace({
     tracking.beginEdit()
   }, [prepareTrackingInteraction, tracking.beginEdit, tracking.cancelInteraction, tracking.mode])
 
-  const handleBeginAssistedSeed = useCallback(() => {
+  const beginAssistedSeed = useCallback(() => {
     if (tracking.activeTrack === null) return
     controller.pause()
     calibration.cancelInteraction()
@@ -183,6 +197,20 @@ export function VideoWorkspace({
     tracking.cancelInteraction,
     tracking.currentSample,
   ])
+
+  const handleBeginAssistedSeed = useCallback(() => {
+    if (!assistedTrackingNoticeAcknowledged) {
+      setShowAssistedTrackingNotice(true)
+      return
+    }
+    beginAssistedSeed()
+  }, [assistedTrackingNoticeAcknowledged, beginAssistedSeed])
+
+  const handleContinueAssistedTrackingNotice = useCallback(() => {
+    onAcknowledgeAssistedTrackingNotice()
+    setShowAssistedTrackingNotice(false)
+    beginAssistedSeed()
+  }, [beginAssistedSeed, onAcknowledgeAssistedTrackingNotice])
 
   const handleCancelAssistedSeed = useCallback(() => {
     tracking.cancelInteraction()
@@ -537,6 +565,12 @@ export function VideoWorkspace({
           />
         </VideoInspector>
       </div>
+      {showAssistedTrackingNotice && (
+        <AssistedTrackingNotice
+          onCancel={() => setShowAssistedTrackingNotice(false)}
+          onContinue={handleContinueAssistedTrackingNotice}
+        />
+      )}
     </main>
   )
 }

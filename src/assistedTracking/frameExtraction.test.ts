@@ -80,6 +80,28 @@ describe('assisted frame extraction geometry', () => {
     ).toEqual({ x: 969, y: 669, width: 663, height: 663 })
   })
 
+  it('uses a compact predicted primary ROI and a wider fallback corridor', () => {
+    const geometry = assistedTrackingGeometryFor({ width: 4096, height: 2160 })!
+    const predicted = searchRectForTracking(
+      { width: 4096, height: 2160 },
+      { x: 1000, y: 1000 },
+      { x: 1150, y: 1000 },
+      geometry,
+      0,
+      'predicted',
+    )!
+    const corridor = searchRectForTracking(
+      { width: 4096, height: 2160 },
+      { x: 1000, y: 1000 },
+      { x: 1150, y: 1000 },
+      geometry,
+      0,
+      'corridor',
+    )!
+    expect(predicted).toEqual({ x: 895, y: 745, width: 511, height: 511 })
+    expect(corridor).toEqual({ x: 745, y: 745, width: 661, height: 511 })
+  })
+
   it('derives extraction geometry from native coordinates after letterboxing', () => {
     const nativePoint = displayPointToVideo(
       { x: 400, y: 300 },

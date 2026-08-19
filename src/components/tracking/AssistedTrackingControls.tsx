@@ -47,6 +47,9 @@ export function AssistedTrackingControls({
         <span>Experimental</span>
       </div>
       <p>Forward-only local template matching. Skips uncertainty instead of guessing.</p>
+      <p className="assisted-tracking__limitation">
+        May lose fast or visually ambiguous targets. Manual reseeding may be required.
+      </p>
 
       <div className="assisted-tracking__status" aria-live="polite">
         <span>Status</span>

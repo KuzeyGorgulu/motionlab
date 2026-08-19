@@ -1,6 +1,5 @@
 import {
   ASSISTED_GEOMETRY_LIMITS,
-  isValidAssistedTrackingGeometry,
   isValidAssistedTrackingSearchGeometry,
 } from './geometry'
 import type { AssistedTrackingGeometry } from './types'
@@ -33,7 +32,7 @@ export function recoveryGeometryFor(
   base: AssistedTrackingGeometry,
   consecutiveMisses: number,
 ): AssistedTrackingGeometry | null {
-  if (!isValidAssistedTrackingGeometry(base)) return null
+  if (!isValidAssistedTrackingSearchGeometry(base)) return null
   const recoveryAttempt = recoveryAttemptFor(consecutiveMisses)
   if (recoveryAttempt === null) return null
   if (recoveryAttempt === 0) return { ...base }

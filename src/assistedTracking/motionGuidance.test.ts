@@ -109,7 +109,37 @@ describe('observation-based motion search guidance', () => {
     )!
     expect(hint.usedMotionGuidance).toBe(true)
     expect(hint.predictedDisplacement).toEqual({ x: 70, y: 0 })
+    expect(hint.recentDisplacement).toEqual({ x: 70, y: 0 })
+    expect(hint.recentVelocity).toEqual({ x: 2100, y: 0 })
     expect(hint.searchCenter).toEqual({ x: 240, y: 300 })
+  })
+
+  it('uses the two most recent trustworthy samples with real timestamps', () => {
+    const hint = motionSearchHint(
+      [
+        { position: { x: 100, y: 100 }, time: 0 },
+        { position: { x: 120, y: 100 }, time: 0.04 },
+        { position: { x: 140, y: 100 }, time: 0.1 },
+      ],
+      0.16,
+      NATIVE_SIZE,
+      512,
+    )!
+    expect(hint.searchCenter).toEqual({ x: 160, y: 100 })
+    expect(hint.recentVelocity?.x).toBeCloseTo(20 / 0.06)
+  })
+
+  it('predicts a nearly static target without excessive movement', () => {
+    const hint = motionSearchHint(
+      [
+        { position: { x: 100, y: 100 }, time: 0 },
+        { position: { x: 101, y: 100 }, time: 0.05 },
+      ],
+      0.1,
+      NATIVE_SIZE,
+      512,
+    )!
+    expect(hint.searchCenter).toEqual({ x: 102, y: 100 })
   })
 
   it('scales the hint for irregular but valid timestamp spacing', () => {
@@ -172,6 +202,34 @@ describe('observation-based motion search guidance', () => {
     expect(hint.usedMotionGuidance).toBe(false)
     expect(hint.searchCenter).toEqual({ x: -40, y: 100 })
     expect(hint.reason).toBe('prediction-outside-frame')
+  })
+
+  it.each([
+    ['left', { x: 2, y: 100 }, { x: -8, y: 100 }, { x: 0, y: 100 }],
+    ['right', { x: 4093, y: 100 }, { x: 4103, y: 100 }, { x: 4095, y: 100 }],
+    ['top', { x: 100, y: 2 }, { x: 100, y: -8 }, { x: 100, y: 0 }],
+    ['bottom', { x: 100, y: 2157 }, { x: 100, y: 2167 }, { x: 100, y: 2159 }],
+  ])('clamps a valid %s-edge prediction to native bounds', (
+    _edge,
+    last,
+    projected,
+    expected,
+  ) => {
+    const previous = {
+      x: last.x - (projected.x - last.x),
+      y: last.y - (projected.y - last.y),
+    }
+    const hint = motionSearchHint(
+      [
+        { position: previous, time: 0 },
+        { position: last, time: 1 },
+      ],
+      2,
+      NATIVE_SIZE,
+      512,
+    )!
+    expect(hint.searchCenter).toEqual(expected)
+    expect(hint.reason).toBe('prediction-clamped-to-frame')
   })
 
   it('uses prediction only to find an image-confirmed constant-motion sample', () => {

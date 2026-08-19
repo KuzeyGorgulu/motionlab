@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 import { EmptyWorkspace } from './components/EmptyWorkspace'
 import { ShieldIcon } from './components/Icons'
 import { VideoWorkspace } from './components/video/VideoWorkspace'
@@ -5,6 +7,8 @@ import { useLocalVideoSource } from './hooks/useLocalVideoSource'
 
 export default function App() {
   const { source, importError, loadVideo, clearVideo } = useLocalVideoSource()
+  const [assistedTrackingNoticeAcknowledged, setAssistedTrackingNoticeAcknowledged] =
+    useState(false)
 
   return (
     <div className="app-shell">
@@ -28,8 +32,12 @@ export default function App() {
         <EmptyWorkspace importError={importError} onSelectVideo={loadVideo} />
       ) : (
         <VideoWorkspace
+          assistedTrackingNoticeAcknowledged={assistedTrackingNoticeAcknowledged}
           importError={importError}
           key={source.url}
+          onAcknowledgeAssistedTrackingNotice={() => {
+            setAssistedTrackingNoticeAcknowledged(true)
+          }}
           onRemoveVideo={clearVideo}
           onSelectVideo={loadVideo}
           source={source}

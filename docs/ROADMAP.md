@@ -112,7 +112,7 @@ Acceptance criteria:
 
 ## Week 3: assistance, export, and hardening
 
-### Phase 7 — Assisted tracking (complete)
+### Phase 7 — Assisted tracking (complete / feature experimental)
 
 Prototype local browser-side tracking behind a replaceable worker-friendly interface. Manual tracking and correction remain first-class.
 
@@ -175,6 +175,31 @@ Acceptance criteria:
 - Reacquisition creates one ordinary transient sample at the actual later timestamp, resets normal geometry, and never fills missed timestamps.
 - A strictly gated 10% current-template blend is explicitly committed only after a high-confidence valid proposal; the immutable seed is compared during recovery and spatial disagreement remains ambiguous.
 - Internal bounded diagnostics, worker cancellation, generation guards, protected samples, atomic acceptance, Phase 7.2 coarse-to-fine matching, and Phase 7.3 basin clustering remain intact.
+
+### Phase 7.5 — Fast-motion assisted-tracking robustness (complete)
+
+Adapt normal tracking to recent observed velocity and add one bounded same-frame fallback for sudden motion changes without weakening image acceptance or creating predicted samples.
+
+Acceptance criteria:
+
+- Two recent accepted observations derive constant velocity from native-coordinate displacement and real media timestamps; insufficient or invalid history preserves the existing unguided behavior.
+- The primary search is centered on the prediction and grows with projected motion plus a template-size safety allowance, under explicit coarse-aligned base-relative and 512 px caps.
+- A low-confidence primary result alone triggers one wider previous-to-predicted corridor pass on the same decoded frame; there is no full-frame search.
+- If both passes remain uncertain, the existing bounded multi-frame recovery continues without filling missed timestamps or changing the confidence policy.
+- Predictions remain ROI hints only, and diagnostics expose prior/predicted positions, displacement, velocity, pass bounds/confidences, selected pass, and stop reason.
+- Synthetic regressions cover static and constant-velocity motion, fast movement, sudden acceleration, ambiguity, frame edges, invalid timing, recovery composition, and a bounded 4K fallback work estimate.
+
+### Phase 7.5.1 — Experimental UX and Phase 7 closure (complete)
+
+Close the implementation phase while keeping Assisted Tracking visibly experimental and setting clear expectations for its semi-automatic, review-and-reseed workflow.
+
+Acceptance criteria:
+
+- The existing `EXPERIMENTAL` badge remains visible and the controls carry a concise permanent limitation/reseeding note.
+- The first seed request in an application session presents an accessible experimental-use notice; acknowledgement is in memory and later reseeding remains immediate.
+- Tracking-loss messaging continues to direct the user to reseed near the last reliable position without fabricating samples or treating loss as an application crash.
+- README, product, architecture, and roadmap documentation distinguish a complete development phase from a guaranteed production-grade tracker and record the known limits of bounded local template matching.
+- Matching, confidence, prediction, recovery, worker execution, suggestion acceptance, storage, and manual tracking behavior remain unchanged.
 
 ### Phase 8 — Export, polish, and end-to-end tests
 

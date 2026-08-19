@@ -63,6 +63,7 @@ function region(
     searchCenter: center,
     geometry: GEOMETRY,
     recoveryAttempt,
+    includeObservationCenter: recoveryAttempt === 0,
   }
 }
 
