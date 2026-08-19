@@ -23,6 +23,12 @@ To track an object, create and select a track in **Manual tracking**, enter **Ma
 
 **Assisted tracking (Experimental)** accelerates the same workflow locally in the browser. Select a track, pause on the target, choose **Seed target** (or use an existing current-frame sample), then start the forward-only run. Resolution-aware coarse search handles larger motion, full-resolution refinement preserves native-pixel observations, nearby refined hypotheses are grouped into one local match basin, and measured-motion guidance changes only where the tracker looks. The physical point you clicked remains the measured anchor. Suggestions appear as a dashed trajectory with hollow markers and remain transient until **Accept suggestions** is chosen; **Discard** leaves confirmed track data unchanged apart from an explicitly created seed. An uncertain frame is left unmeasured while a short bounded recovery searches subsequent frames; successful reacquisition resumes normally without filling the gap. Persistent loss, invalid frames, confirmed-sample conflicts, or video end stop visibly instead of creating guessed points. Accepted suggestions become ordinary editable samples in one undoable batch.
 
+## Assisted Tracking Demo
+
+Seed a target once and let MotionLab follow it frame-by-frame using local template matching, motion guidance, and recovery.
+
+![MotionLab assisted tracking demo](docs/assets/assisted-tracking-demo.gif)
+
 Track samples store exact media anchor timestamps, fallback frame-bucket references, and native-video pixel positions only. Calibration-derived world positions update live without changing the stored trajectory. Tracks, calibration, and annotations are session-only and clear when the video is replaced or removed.
 
 The full-height right-side **Numerical inspector** derives position, displacement, cumulative path distance, velocity, speed, and acceleration for the active track. Results use the calibration's physical unit when available and explicit `px`, `px/s`, and `px/s²` units otherwise. A collapsible Analysis panel fills the left workspace column below the video/timeline and compares Position (X/Y), Velocity (vx/vy/Speed), or Acceleration (ax/ay/|a|) samples on shared true-timestamp axes. A live video playhead and transient time-only graph cursor support synchronization and background timestamp seeking, while selecting an actual marker seeks to its exact media anchor.
