@@ -12,12 +12,29 @@ import {
   INITIAL_ANALYSIS_PANEL_STATE,
   reduceAnalysisPanelState,
 } from '../../analysis/panelState'
+import { selectVisualizationGroup } from '../../analysis/series'
 import type { AnnotationTool } from '../../annotations/types'
 import { useAssistedTracking } from '../../hooks/useAssistedTracking'
 import { useAnnotationWorkspace } from '../../hooks/useAnnotationWorkspace'
 import { useCalibrationWorkspace } from '../../hooks/useCalibrationWorkspace'
 import { useTrackingWorkspace } from '../../hooks/useTrackingWorkspace'
 import { useVideoController } from '../../hooks/useVideoController'
+import {
+  downloadTextFile,
+  exportFilenameForVideo,
+} from '../../export/download'
+import { createGraphSvg } from '../../export/graphSvg'
+import {
+  createScientificCsv,
+  createScientificJson,
+} from '../../export/scientificData'
+import {
+  createMotionLabProject,
+  projectFilenameForVideo,
+  serializeMotionLabProject,
+} from '../../project/serialize'
+import type { MotionLabProjectV1 } from '../../project/types'
+import { compareRelinkedVideo } from '../../project/videoRelink'
 import type { LocalVideoSource } from '../../types/video'
 import { AnnotationInspector } from '../annotations/AnnotationInspector'
 import { AnnotationToolbar } from '../annotations/AnnotationToolbar'
@@ -25,6 +42,8 @@ import { AnalysisPanel } from '../analysis/AnalysisPanel'
 import { KinematicsPanel } from '../analysis/KinematicsPanel'
 import { CalibrationPanel } from '../calibration/CalibrationPanel'
 import { FilmIcon, TrashIcon } from '../Icons'
+import { VideoRelinkWarning } from '../project/VideoRelinkWarning'
+import { WorkspaceFileActions } from '../project/WorkspaceFileActions'
 import { AssistedTrackingNotice } from '../tracking/AssistedTrackingNotice'
 import { TrackingPanel } from '../tracking/TrackingPanel'
 import { TransportControls } from './TransportControls'
@@ -35,8 +54,13 @@ import { VideoStage } from './VideoStage'
 interface VideoWorkspaceProps {
   source: LocalVideoSource
   importError: string | null
+  initialProject: MotionLabProjectV1 | null
+  projectError: string | null
   assistedTrackingNoticeAcknowledged: boolean
   onAcknowledgeAssistedTrackingNotice: () => void
+  onOpenProject: (file: File) => void
+  onProjectDataPresenceChange: (hasData: boolean) => void
+  onProjectRelinkComplete: () => void
   onSelectVideo: (file: File) => void
   onRemoveVideo: () => void
 }
@@ -55,16 +79,40 @@ function isEditableOrInteractive(target: EventTarget | null): boolean {
 export function VideoWorkspace({
   source,
   importError,
+  initialProject,
+  projectError,
   assistedTrackingNoticeAcknowledged,
   onAcknowledgeAssistedTrackingNotice,
+  onOpenProject,
+  onProjectDataPresenceChange,
+  onProjectRelinkComplete,
   onSelectVideo,
   onRemoveVideo,
 }: VideoWorkspaceProps) {
+  const restoredProject = useRef(initialProject).current
   const videoRef = useRef<HTMLVideoElement>(null)
   const controller = useVideoController(videoRef)
-  const annotations = useAnnotationWorkspace(controller.currentTime)
-  const calibration = useCalibrationWorkspace(controller.currentTime)
-  const tracking = useTrackingWorkspace(controller.currentTime)
+  const annotations = useAnnotationWorkspace(
+    controller.currentTime,
+    restoredProject?.annotations,
+  )
+  const calibration = useCalibrationWorkspace(
+    controller.currentTime,
+    restoredProject?.calibration,
+  )
+  const tracking = useTrackingWorkspace(
+    controller.currentTime,
+    restoredProject === null
+      ? undefined
+      : {
+          snapshot: {
+            tracks: restoredProject.tracks,
+            activeTrackId: restoredProject.workspace.activeTrackId,
+          },
+          trailMode: restoredProject.workspace.trailMode,
+          advanceAfterMark: restoredProject.workspace.advanceAfterMark,
+        },
+  )
   const assisted = useAssistedTracking({
     videoRef,
     metadata: controller.metadata,
@@ -75,10 +123,20 @@ export function VideoWorkspace({
   })
   const [analysisPanel, dispatchAnalysisPanel] = useReducer(
     reduceAnalysisPanelState,
-    INITIAL_ANALYSIS_PANEL_STATE,
+    restoredProject === null
+      ? INITIAL_ANALYSIS_PANEL_STATE
+      : {
+          expanded: restoredProject.workspace.analysisExpanded,
+          mode: restoredProject.workspace.analysisMode,
+        },
   )
   const [showAssistedTrackingNotice, setShowAssistedTrackingNotice] =
     useState(false)
+  const [operationMessage, setOperationMessage] = useState<{
+    kind: 'error' | 'status'
+    text: string
+  } | null>(null)
+  const restoredMediaTimeApplied = useRef(false)
   const controlsEnabled = controller.metadata !== null && controller.mediaError === null
   const trackAnalysis = useMemo(
     () => tracking.activeTrack === null
@@ -86,6 +144,191 @@ export function VideoWorkspace({
       : deriveTrackKinematics(tracking.activeTrack, calibration.calibration),
     [calibration.calibration, tracking.activeTrack],
   )
+  const visualizationGroup = useMemo(
+    () => trackAnalysis === null
+      ? null
+      : selectVisualizationGroup(trackAnalysis, analysisPanel.mode),
+    [analysisPanel.mode, trackAnalysis],
+  )
+  const relinkComparison = useMemo(
+    () => initialProject === null || controller.metadata === null
+      ? null
+      : compareRelinkedVideo(
+          initialProject.video,
+          source,
+          controller.metadata,
+        ),
+    [controller.metadata, initialProject, source],
+  )
+  const hasProjectData =
+    annotations.annotations.length > 0 ||
+    calibration.calibration !== null ||
+    tracking.tracks.length > 0
+
+  useEffect(() => {
+    onProjectDataPresenceChange(hasProjectData)
+    return () => onProjectDataPresenceChange(false)
+  }, [hasProjectData, onProjectDataPresenceChange])
+
+  useEffect(() => {
+    if (
+      restoredProject === null ||
+      controller.metadata === null ||
+      restoredMediaTimeApplied.current
+    ) {
+      return
+    }
+    restoredMediaTimeApplied.current = true
+    controller.seek(restoredProject.workspace.mediaTime)
+  }, [controller.metadata, controller.seek, restoredProject])
+
+  useEffect(() => {
+    if (relinkComparison?.matches) onProjectRelinkComplete()
+  }, [onProjectRelinkComplete, relinkComparison])
+
+  const currentProject = useCallback(() => {
+    if (controller.metadata === null) return null
+    return createMotionLabProject({
+      videoName: source.name,
+      metadata: controller.metadata,
+      annotations: annotations.annotations,
+      calibration: calibration.calibration,
+      tracks: tracking.tracks,
+      activeTrackId: tracking.activeTrackId,
+      trailMode: tracking.trailMode,
+      advanceAfterMark: tracking.advanceAfterMark,
+      analysisMode: analysisPanel.mode,
+      analysisExpanded: analysisPanel.expanded,
+      mediaTime: controller.currentTime,
+    })
+  }, [
+    analysisPanel.expanded,
+    analysisPanel.mode,
+    annotations.annotations,
+    calibration.calibration,
+    controller.currentTime,
+    controller.metadata,
+    source.name,
+    tracking.activeTrackId,
+    tracking.advanceAfterMark,
+    tracking.tracks,
+    tracking.trailMode,
+  ])
+
+  const reportOperationError = useCallback((text: string) => {
+    setOperationMessage({ kind: 'error', text })
+  }, [])
+
+  const handleSaveProject = useCallback(() => {
+    const project = currentProject()
+    if (project === null) {
+      reportOperationError('Video metadata is not ready yet. Wait for the video to load, then save again.')
+      return
+    }
+    const serialized = serializeMotionLabProject(project)
+    if (!serialized.ok) {
+      reportOperationError(serialized.message)
+      return
+    }
+    try {
+      downloadTextFile(
+        serialized.text,
+        projectFilenameForVideo(source.name),
+        'application/json;charset=utf-8',
+      )
+      setOperationMessage({ kind: 'status', text: 'Project saved locally.' })
+    } catch {
+      reportOperationError('The project download could not be created. Existing work is safe; try again.')
+    }
+  }, [currentProject, reportOperationError, source.name])
+
+  const handleExportCsv = useCallback(() => {
+    const result = createScientificCsv(tracking.tracks, calibration.calibration)
+    if (!result.ok) {
+      reportOperationError(result.message)
+      return
+    }
+    try {
+      downloadTextFile(
+        result.value,
+        exportFilenameForVideo(source.name, 'track-data', 'csv'),
+        'text/csv;charset=utf-8',
+      )
+      setOperationMessage({
+        kind: 'status',
+        text: `Exported ${result.rowCount} track sample${result.rowCount === 1 ? '' : 's'} to CSV.`,
+      })
+    } catch {
+      reportOperationError('CSV export could not be generated. Existing work is safe; try again.')
+    }
+  }, [calibration.calibration, reportOperationError, source.name, tracking.tracks])
+
+  const handleExportJson = useCallback(() => {
+    const project = currentProject()
+    if (project === null) {
+      reportOperationError('Video metadata is not ready yet. Wait for the video to load, then export again.')
+      return
+    }
+    const result = createScientificJson(
+      project.video,
+      project.annotations,
+      project.tracks,
+      project.calibration,
+    )
+    if (!result.ok) {
+      reportOperationError(result.message)
+      return
+    }
+    try {
+      downloadTextFile(
+        result.value,
+        exportFilenameForVideo(source.name, 'scientific-data', 'json'),
+        'application/json;charset=utf-8',
+      )
+      setOperationMessage({
+        kind: 'status',
+        text: `Exported ${result.rowCount} track sample${result.rowCount === 1 ? '' : 's'} to JSON.`,
+      })
+    } catch {
+      reportOperationError('JSON data export could not be generated. Existing work is safe; try again.')
+    }
+  }, [currentProject, reportOperationError, source.name])
+
+  const handleExportGraph = useCallback(() => {
+    if (tracking.activeTrack === null || visualizationGroup === null) {
+      reportOperationError('Select a track with graph data before exporting the current graph.')
+      return
+    }
+    const result = createGraphSvg(
+      visualizationGroup,
+      tracking.activeTrack.name,
+      tracking.activeTrack.color,
+    )
+    if (!result.ok) {
+      reportOperationError(result.message)
+      return
+    }
+    try {
+      downloadTextFile(
+        result.svg,
+        exportFilenameForVideo(
+          source.name,
+          `${tracking.activeTrack.name}-${analysisPanel.mode}`,
+          'svg',
+        ),
+        'image/svg+xml;charset=utf-8',
+      )
+      setOperationMessage({ kind: 'status', text: 'Exported the current graph as SVG.' })
+    } catch {
+      reportOperationError('The graph SVG could not be generated. Existing work is safe; try again.')
+    }
+  }, [
+    analysisPanel.mode,
+    reportOperationError,
+    source.name,
+    tracking.activeTrack,
+    visualizationGroup,
+  ])
 
   const handleSeekSample = useCallback((time: number) => {
     assisted.stopForExternalInteraction('Stopped because the video was manually sought.')
@@ -359,7 +602,27 @@ export function VideoWorkspace({
           </div>
         </div>
         <div className="workspace-bar__actions">
-          {importError !== null && <span className="toolbar-error" role="alert">{importError}</span>}
+          {(projectError !== null || importError !== null || operationMessage !== null) && (
+            <span
+              className={operationMessage?.kind === 'status' && projectError === null && importError === null
+                ? 'toolbar-status'
+                : 'toolbar-error'}
+              role={operationMessage?.kind === 'status' && projectError === null && importError === null
+                ? 'status'
+                : 'alert'}
+            >
+              {projectError ?? importError ?? operationMessage?.text}
+            </span>
+          )}
+          <WorkspaceFileActions
+            canExportGraph={tracking.activeTrack !== null && tracking.activeTrack.samples.length > 0}
+            canSave={controller.metadata !== null}
+            onExportCsv={handleExportCsv}
+            onExportGraph={handleExportGraph}
+            onExportJson={handleExportJson}
+            onOpenProject={onOpenProject}
+            onSaveProject={handleSaveProject}
+          />
           <VideoImportButton compact label="Change video" onSelect={onSelectVideo} />
           <button
             className="button button--danger"
@@ -371,6 +634,14 @@ export function VideoWorkspace({
           </button>
         </div>
       </header>
+
+      {relinkComparison !== null && !relinkComparison.matches && (
+        <VideoRelinkWarning
+          differences={relinkComparison.differences}
+          onAccept={onProjectRelinkComplete}
+          onSelectVideo={onSelectVideo}
+        />
+      )}
 
       <div className="workspace__body">
         <div className="analysis-area">

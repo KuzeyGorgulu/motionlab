@@ -34,6 +34,7 @@ interface DragState {
 }
 
 export interface AnnotationWorkspaceController {
+  annotations: Annotation[]
   activeTool: AnnotationTool
   currentAnnotations: Annotation[]
   renderedAnnotations: Annotation[]
@@ -56,16 +57,22 @@ export interface AnnotationWorkspaceController {
 
 export function useAnnotationWorkspace(
   currentTime: number,
+  initialAnnotations: readonly Annotation[] = [],
 ): AnnotationWorkspaceController {
   const [history, dispatch] = useReducer(
     annotationHistoryReducer,
-    undefined,
+    initialAnnotations,
     createAnnotationHistory,
   )
   const [activeTool, setActiveToolState] = useState<AnnotationTool>('select')
   const [draft, setDraft] = useState<AnnotationDraft | null>(null)
   const [drag, setDrag] = useState<DragState | null>(null)
-  const nextId = useRef(1)
+  const nextId = useRef(
+    initialAnnotations.reduce((next, annotation) => {
+      const match = /^annotation-(\d+)$/.exec(annotation.id)
+      return match === null ? next : Math.max(next, Number(match[1]) + 1)
+    }, 1),
+  )
 
   const currentFrame = useMemo(
     () => createFrameReference(currentTime),
@@ -237,6 +244,7 @@ export function useAnnotationWorkspace(
   const pointerCancel = useCallback(() => setDrag(null), [])
 
   return {
+    annotations: history.present.annotations,
     activeTool,
     currentAnnotations,
     renderedAnnotations,

@@ -16,6 +16,8 @@ An experimental forward-only assisted tracker provides a productivity aid for se
 
 The active track has a readable right-side kinematics inspector for position, displacement from the previous valid sample, cumulative path distance, velocity, speed, and acceleration. On desktop, this independently scrollable control and numerical rail spans the full workspace height. A dedicated collapsible Analysis panel fills only the flexible left workspace column below the video/timeline. It compares dimensionally compatible Position (X/Y), Velocity (vx/vy/Speed), or Acceleration (ax/ay/|a|) sample series on a shared true-media-time domain. The selected family survives collapse/reopen. A continuous video playhead, transient time-only graph cursor, background timestamp seeking, and exact-anchor marker seeking synchronize the graph with the media without interpolating measurements. Analysis is physical when calibration exists and explicitly pixel-based otherwise.
 
+Experiments can be downloaded as validated version-1 `.motionlab` JSON projects and reopened through explicit local-video relinking. A project stores scientifically relevant annotation, calibration, confirmed-track, and workspace metadata but never embeds video or transient Assisted Tracking state. Combined chronological CSV and human-readable JSON exports reuse the existing kinematics derivation, and the selected analysis graph can be exported as a standalone labeled SVG.
+
 ## Intended users
 
 - Students performing mechanics experiments without specialist camera equipment.
@@ -30,8 +32,8 @@ The active track has a readable right-side kinematics inspector for position, di
 3. Calibrate real-world scale and define the coordinate system.
 4. Record object positions manually, optionally using experimental assisted tracking as a conservative accelerator.
 5. Correct the track and calculate position, displacement, velocity, and acceleration from timestamps.
-6. Inspect trajectory overlays, graphs, fitted models, and numerical results.
-7. Export raw and processed measurement data.
+6. Inspect trajectory overlays, graphs, and numerical results.
+7. Save the experiment for later relinking or export raw and processed measurement data.
 
 ## Final planned capabilities
 
@@ -53,7 +55,7 @@ The active track has a readable right-side kinematics inspector for position, di
 
 ## Privacy and local-first philosophy
 
-Imported files are represented with browser Object URLs and decoded locally by the browser. MotionLab does not upload source video or derived frames. Future persistence should store only necessary local project data using browser storage and should remain exportable and removable by the user. Any future feature that would transmit user content requires an explicit product decision and would violate the current architecture.
+Imported files are represented with browser Object URLs and decoded locally by the browser. MotionLab does not upload source video or derived frames. Explicitly downloaded `.motionlab`, CSV, JSON, and SVG files are generated locally and remain under user control. MotionLab does not persist video in browser storage. Any future feature that would transmit user content requires an explicit product decision and would violate the current architecture.
 
 MotionLab is free to operate: no API keys, metered services, analytics, or required server are part of the product.
 
@@ -76,6 +78,14 @@ Match acceptance combines absolute normalized mean-absolute difference, separati
 The worker receives only the bounded template/search pixel regions needed for matching. Deterministic box averaging supports a large low-resolution search followed by exact one-pixel refinement around a bounded set of spatially distinct hypotheses. Once two visual observations exist, their real timestamp interval and native displacement provide a constant-velocity prediction for the next timestamp. The main pass centers on that prediction and expands its radius by 35% of projected motion plus 25% of template size, capped at 1.5× the base radius and 512 px. Only a low-confidence main pass triggers one wider same-frame corridor search between the previous observation and prediction, using the full projected-motion and template-size allowances with the same 512 px ceiling. This tolerates moderate acceleration or reversal without full-frame search and without changing confidence thresholds. If both passes are uncertain, recovery centers progressively expanded geometry on the projected location at approximately 1.35×, 1.7×, and 2.0×, still capped at 512 px. If the current template has adapted, recovery compares it with the immutable seed and rejects spatial disagreement rather than averaging positions. Predictions never become observations without successful image matching. No pixels, video, results, telemetry, or analytics leave the browser. The UI reports processed frames, elapsed run time, and average milliseconds per processed frame. No representative-video benchmark is claimed: measure a chosen clip by running assistance and reading the displayed metrics after a stop, failure, or completion.
 
 Expected limitations include fast or sudden motion, severe motion blur, occlusion, significant rotation or scale change, abrupt lighting change, visually repetitive, ambiguous, or low-texture targets, motion beyond bounded search limits, and targets leaving the frame. These are known limits of the lightweight local template-matching approach rather than promises of fully automatic detection. Recovery is deliberately manual: review and accept reliable suggestions, correct or add a point, reseed near the last reliable position, and continue.
+
+## Project and export assumptions
+
+The version-1 project schema contains the original video name with optional duration and native dimensions, annotations and frame references, calibration and coordinate-axis metadata, confirmed tracks/samples, active-track identity, trail and mark-advance preferences, analysis mode/collapse state, and media time. It excludes Object URLs, video bytes, undo stacks, pointer drafts, worker execution, templates, predictions, diagnostics, and unaccepted Assisted Tracking suggestions. Parsing is read-then-validate; only a valid project can replace the live workspace.
+
+Opening a project requires the user to select a local video. Filename, dimensions, and duration are compared when present. A mismatch is visible and can be rejected by choosing another video or explicitly accepted with an alignment warning. Validated project state initializes a newly mounted workspace atomically.
+
+CSV is one chronological multi-track table. Native pixel coordinates are always present. Generic analysis columns are paired with explicit `position_space`, `position_unit`, `velocity_unit`, and `acceleration_unit` fields, so calibrated world values and uncalibrated pixel values are unambiguous. Missing derivatives are empty. Scientific JSON contains the same derived sample quantities plus calibration/annotation context but omits workspace-only metadata. Graph SVG export covers the existing selected position, velocity, or acceleration family and excludes interactive chrome.
 
 ## Kinematics assumptions
 

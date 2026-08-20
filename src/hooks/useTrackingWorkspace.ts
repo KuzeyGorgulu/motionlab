@@ -16,6 +16,7 @@ import {
   type Track,
   type TrackDragPreview,
   type TrackSample,
+  type TrackingSnapshot,
   type TrackingMode,
   type TrailMode,
 } from '../tracking/types'
@@ -37,6 +38,12 @@ interface DragState {
 export interface TrackingPointerDownResult {
   capturePointer: boolean
   marked: boolean
+}
+
+export interface InitialTrackingWorkspace {
+  snapshot: TrackingSnapshot
+  trailMode: TrailMode
+  advanceAfterMark: boolean
 }
 
 export interface TrackingWorkspaceController {
@@ -76,18 +83,38 @@ export interface TrackingWorkspaceController {
 
 export function useTrackingWorkspace(
   currentTime: number,
+  initial: InitialTrackingWorkspace = {
+    snapshot: { tracks: [], activeTrackId: null },
+    trailMode: 'past',
+    advanceAfterMark: false,
+  },
 ): TrackingWorkspaceController {
   const [history, dispatch] = useReducer(
     trackingHistoryReducer,
-    undefined,
+    initial.snapshot,
     createTrackingHistory,
   )
   const [mode, setMode] = useState<TrackingMode>('idle')
-  const [trailMode, setTrailMode] = useState<TrailMode>('past')
-  const [advanceAfterMark, setAdvanceAfterMark] = useState(false)
+  const [trailMode, setTrailMode] = useState<TrailMode>(initial.trailMode)
+  const [advanceAfterMark, setAdvanceAfterMark] = useState(
+    initial.advanceAfterMark,
+  )
   const [drag, setDrag] = useState<DragState | null>(null)
-  const nextTrackId = useRef(1)
-  const nextSampleId = useRef(1)
+  const nextTrackId = useRef(
+    initial.snapshot.tracks.reduce((next, track) => {
+      const match = /^track-(\d+)$/.exec(track.id)
+      return match === null ? next : Math.max(next, Number(match[1]) + 1)
+    }, 1),
+  )
+  const nextSampleId = useRef(
+    initial.snapshot.tracks.flatMap((track) => track.samples).reduce(
+      (next, sample) => {
+        const match = /^sample-(\d+)$/.exec(sample.id)
+        return match === null ? next : Math.max(next, Number(match[1]) + 1)
+      },
+      1,
+    ),
+  )
   const currentFrame = useMemo(
     () => createFrameReference(currentTime),
     [currentTime],

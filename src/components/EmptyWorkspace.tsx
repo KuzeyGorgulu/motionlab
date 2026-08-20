@@ -1,16 +1,21 @@
 import { useState, type DragEvent } from 'react'
 
 import { FilmIcon, ShieldIcon } from './Icons'
+import { ProjectOpenButton } from './project/ProjectOpenButton'
 import { VideoImportButton } from './video/VideoImportButton'
 
 interface EmptyWorkspaceProps {
   onSelectVideo: (file: File) => void
+  onOpenProject: (file: File) => void
   importError: string | null
+  projectError: string | null
 }
 
 export function EmptyWorkspace({
   onSelectVideo,
+  onOpenProject,
   importError,
+  projectError,
 }: EmptyWorkspaceProps) {
   const [isDragging, setIsDragging] = useState(false)
 
@@ -54,11 +59,12 @@ export function EmptyWorkspace({
           </p>
           <div className="empty-workspace__actions">
             <VideoImportButton onSelect={onSelectVideo} />
+            <ProjectOpenButton onOpen={onOpenProject} />
             <span>or drop a video here</span>
           </div>
-          {importError !== null && (
+          {(importError !== null || projectError !== null) && (
             <p className="inline-error" role="alert">
-              {importError}
+              {projectError ?? importError}
             </p>
           )}
           <div className="privacy-note">

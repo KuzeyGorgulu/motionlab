@@ -20,6 +20,7 @@ export function VideoImportButton({
       <input
         ref={inputRef}
         accept="video/*"
+        aria-label="Choose video file"
         className="file-input"
         onChange={(event) => {
           const file = event.currentTarget.files?.[0]

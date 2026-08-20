@@ -36,10 +36,12 @@ export type TrackingAction =
 
 const HISTORY_LIMIT = 100
 
-export function createTrackingHistory(): TrackingHistory {
+export function createTrackingHistory(
+  snapshot: TrackingSnapshot = { tracks: [], activeTrackId: null },
+): TrackingHistory {
   return {
     past: [],
-    present: { tracks: [], activeTrackId: null },
+    present: { tracks: [...snapshot.tracks], activeTrackId: snapshot.activeTrackId },
     future: [],
   }
 }

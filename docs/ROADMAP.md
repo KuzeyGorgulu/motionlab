@@ -201,14 +201,18 @@ Acceptance criteria:
 - README, product, architecture, and roadmap documentation distinguish a complete development phase from a guaranteed production-grade tracker and record the known limits of bounded local template matching.
 - Matching, confidence, prediction, recovery, worker execution, suggestion acceptance, storage, and manual tracking behavior remain unchanged.
 
-### Phase 8 — Export, polish, and end-to-end tests
+### Phase 8 — Save, export, and reliability (complete)
 
-Add CSV export for raw and processed data, project recovery appropriate to the stabilized schema, UX/error polish, and Playwright coverage for critical flows.
+Turn the local analysis workspace into a reopenable experiment workflow with versioned project files, local video relinking, scientific exports, destructive-action protection, and deterministic browser coverage.
 
 Acceptance criteria:
 
-- CSV includes timestamps, coordinates, units, and clear headers.
-- Exported numerical fixtures match tested physics results.
-- Important import → calibrate → track → analyze → export paths have end-to-end coverage.
-- Privacy claims, browser limitations, supported formats, and recovery behavior are documented.
-- No server, telemetry, paid API, or required account is introduced.
+- Version-1 `.motionlab` JSON stores annotations, calibration, confirmed tracks/samples, and useful workspace metadata without embedding video or transient Assisted Tracking state.
+- Safe parsing validates format, version, schema, geometry, identities, and references before a fresh relinked workspace is constructed; invalid files preserve current work.
+- Relinking compares filename, native resolution, and duration when available and exposes an explicit mismatch warning with choose-another/use-anyway recovery.
+- Combined chronological CSV and human-readable JSON include stable identities, timestamps/frame references, native pixels, existing derived kinematics, and unambiguous units; missing values remain empty/null.
+- The current existing analysis family exports as labeled standalone SVG without interactive playhead/cursor chrome.
+- Meaningful current data warns before video replacement/removal or opening another valid project.
+- Unit coverage locks schema round trips, version/corruption rejection, relink comparison, multiple-track export, calibration units, unavailable derivatives, CSV escaping, and graph generation.
+- Six Playwright scenarios cover save, open/relink/restore, CSV/SVG export, malformed-project safety, mismatch warning, and canceled destructive removal using only a generated local test video.
+- Privacy, relinking, export fields, browser limitations, and Assisted Tracking's unchanged experimental status are documented; no server, telemetry, account, upload, or cloud dependency is introduced.

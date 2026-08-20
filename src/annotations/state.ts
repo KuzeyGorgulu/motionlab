@@ -23,10 +23,12 @@ export type AnnotationAction =
 
 const HISTORY_LIMIT = 100
 
-export function createAnnotationHistory(): AnnotationHistory {
+export function createAnnotationHistory(
+  annotations: readonly Annotation[] = [],
+): AnnotationHistory {
   return {
     past: [],
-    present: { annotations: [], selectedId: null },
+    present: { annotations: [...annotations], selectedId: null },
     future: [],
   }
 }

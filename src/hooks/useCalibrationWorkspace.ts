@@ -47,17 +47,22 @@ function firstErrorMessage(
 
 export function useCalibrationWorkspace(
   currentTime: number,
+  initialCalibration: Calibration | null = null,
 ): CalibrationWorkspaceController {
   const [state, dispatch] = useReducer(
     calibrationReducer,
-    undefined,
+    initialCalibration,
     createCalibrationState,
   )
   const [mode, setMode] = useState<CalibrationMode>('idle')
   const [referencePoints, setReferencePoints] = useState<Point[]>([])
   const [previewPoint, setPreviewPoint] = useState<Point | null>(null)
-  const [knownDistanceInput, setKnownDistanceInput] = useState('1')
-  const [unit, setUnit] = useState<DistanceUnit>('m')
+  const [knownDistanceInput, setKnownDistanceInput] = useState(
+    initialCalibration?.knownDistance.toString() ?? '1',
+  )
+  const [unit, setUnit] = useState<DistanceUnit>(
+    initialCalibration?.unit ?? 'm',
+  )
   const [error, setError] = useState<string | null>(null)
   const currentFrameKey = frameReferenceKey(createFrameReference(currentTime))
   const previousFrameKey = useRef(currentFrameKey)

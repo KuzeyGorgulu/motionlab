@@ -5,8 +5,10 @@ export type CalibrationAction =
   | { type: 'reset' }
   | { type: 'video-replaced' }
 
-export function createCalibrationState(): CalibrationState {
-  return { calibration: null }
+export function createCalibrationState(
+  calibration: Calibration | null = null,
+): CalibrationState {
+  return { calibration }
 }
 
 export function calibrationReducer(
