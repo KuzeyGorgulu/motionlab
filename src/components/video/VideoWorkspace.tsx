@@ -31,6 +31,7 @@ import {
   exportFilenameForVideo,
 } from '../../export/download'
 import { createGraphSvg } from '../../export/graphSvg'
+import { createExperimentReportHtml } from '../../export/reportHtml'
 import {
   createScientificCsv,
   createScientificJson,
@@ -42,6 +43,12 @@ import {
 } from '../../project/serialize'
 import type { MotionLabProjectV1 } from '../../project/types'
 import { compareRelinkedVideo } from '../../project/videoRelink'
+import { buildExperimentReport } from '../../report/builder'
+import {
+  createDefaultReportProjectState,
+  hasMeaningfulReportState,
+} from '../../report/projectState'
+import type { ReportTrackAnalysisInput } from '../../report/types'
 import type { LocalVideoSource } from '../../types/video'
 import { AnnotationInspector } from '../annotations/AnnotationInspector'
 import { AnnotationToolbar } from '../annotations/AnnotationToolbar'
@@ -53,6 +60,7 @@ import { ShortcutHelp } from '../guidance/ShortcutHelp'
 import { FilmIcon, TrashIcon } from '../Icons'
 import { VideoRelinkWarning } from '../project/VideoRelinkWarning'
 import { WorkspaceFileActions } from '../project/WorkspaceFileActions'
+import { ReportWorkspace } from '../report/ReportWorkspace'
 import { AssistedTrackingNotice } from '../tracking/AssistedTrackingNotice'
 import { TrackingPanel } from '../tracking/TrackingPanel'
 import { TransportControls } from './TransportControls'
@@ -73,6 +81,8 @@ interface VideoWorkspaceProps {
   onSelectVideo: (file: File) => void
   onRemoveVideo: () => void
 }
+
+const MOTIONLAB_VERSION = '0.1.0'
 
 function isEditableOrInteractive(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
@@ -142,6 +152,13 @@ export function VideoWorkspace({
           source: { type: 'raw' },
           model: 'none',
         },
+  )
+  const [workspaceView, setWorkspaceView] = useState<'analysis' | 'report'>('analysis')
+  const [reportState, setReportState] = useState(
+    () => restoredProject?.report ?? createDefaultReportProjectState(),
+  )
+  const [reportGeneratedAt, setReportGeneratedAt] = useState(
+    () => new Date().toISOString(),
   )
   const [showAssistedTrackingNotice, setShowAssistedTrackingNotice] =
     useState(false)
@@ -221,6 +238,73 @@ export function VideoWorkspace({
       trackAnalysis,
     ],
   )
+  const reportTrackAnalyses = useMemo<ReportTrackAnalysisInput[]>(
+    () => tracking.tracks.map((track) => {
+      const rawAnalysis = deriveTrackKinematics(track, calibration.calibration)
+      const selectedAnalysis = analysisPanel.source.type === 'raw'
+        ? rawAnalysis
+        : (() => {
+            const result = deriveSmoothedTrackKinematics(
+              track,
+              calibration.calibration,
+              analysisPanel.source.windowSize,
+            )
+            return result.ok ? result.analysis : null
+          })()
+      const fitResult = analysisPanel.model === 'none' || selectedAnalysis === null
+        ? null
+        : fitMotionModel(
+            selectedAnalysis,
+            analysisPanel.model,
+            analysisPanel.source.type,
+          )
+      const fit = fitResult?.ok ? fitResult.fit : null
+      return {
+        track,
+        rawAnalysis,
+        analysis: selectedAnalysis,
+        fit,
+        diagnostics:
+          selectedAnalysis === null || fit === null
+            ? null
+            : deriveFitDiagnostics(selectedAnalysis, fit),
+      }
+    }),
+    [
+      analysisPanel.model,
+      analysisPanel.source,
+      calibration.calibration,
+      tracking.tracks,
+    ],
+  )
+  const buildCurrentReport = useCallback(
+    (generatedAt: string) => buildExperimentReport({
+      reportState,
+      video: {
+        filename: source.name,
+        duration: controller.metadata?.duration ?? null,
+        width: controller.metadata?.width ?? null,
+        height: controller.metadata?.height ?? null,
+      },
+      calibration: calibration.calibration,
+      analysisSource: analysisPanel.source,
+      trackAnalyses: reportTrackAnalyses,
+      generatedAt,
+      motionLabVersion: MOTIONLAB_VERSION,
+    }),
+    [
+      analysisPanel.source,
+      calibration.calibration,
+      controller.metadata,
+      reportState,
+      reportTrackAnalyses,
+      source.name,
+    ],
+  )
+  const experimentReport = useMemo(
+    () => buildCurrentReport(reportGeneratedAt),
+    [buildCurrentReport, reportGeneratedAt],
+  )
   const relinkComparison = useMemo(
     () => initialProject === null || controller.metadata === null
       ? null
@@ -234,7 +318,8 @@ export function VideoWorkspace({
   const hasProjectData =
     annotations.annotations.length > 0 ||
     calibration.calibration !== null ||
-    tracking.tracks.length > 0
+    tracking.tracks.length > 0 ||
+    hasMeaningfulReportState(reportState)
 
   useEffect(() => {
     onProjectDataPresenceChange(hasProjectData)
@@ -271,6 +356,7 @@ export function VideoWorkspace({
       analysisMode: analysisPanel.mode,
       analysisExpanded: analysisPanel.expanded,
       mediaTime: controller.currentTime,
+      report: reportState,
     })
   }, [
     analysisPanel.expanded,
@@ -279,6 +365,7 @@ export function VideoWorkspace({
     calibration.calibration,
     controller.currentTime,
     controller.metadata,
+    reportState,
     source.name,
     tracking.activeTrackId,
     tracking.advanceAfterMark,
@@ -404,6 +491,26 @@ export function VideoWorkspace({
     tracking.activeTrack,
     visualizationGroup,
   ])
+
+  const handleExportReport = useCallback(() => {
+    const generatedAt = new Date().toISOString()
+    const result = createExperimentReportHtml(buildCurrentReport(generatedAt))
+    if (!result.ok) {
+      reportOperationError(result.message)
+      return
+    }
+    try {
+      downloadTextFile(
+        result.html,
+        exportFilenameForVideo(source.name, 'experiment-report', 'html'),
+        'text/html;charset=utf-8',
+      )
+      setReportGeneratedAt(generatedAt)
+      setOperationMessage({ kind: 'status', text: 'Exported the experiment report as standalone HTML.' })
+    } catch {
+      reportOperationError('The report HTML could not be generated. Existing work is safe; try again.')
+    }
+  }, [buildCurrentReport, reportOperationError, source.name])
 
   const handleSeekSample = useCallback((time: number) => {
     assisted.stopForExternalInteraction('Stopped because the video was manually sought.')
@@ -567,6 +674,7 @@ export function VideoWorkspace({
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (workspaceView === 'report') return
       if (isEditableOrInteractive(event.target)) {
         return
       }
@@ -664,6 +772,7 @@ export function VideoWorkspace({
     tracking.mode,
     tracking.redo,
     tracking.undo,
+    workspaceView,
   ])
 
   return (
@@ -675,6 +784,28 @@ export function VideoWorkspace({
             <span className="source-identity__label">Local source</span>
             <strong title={source.name}>{source.name}</strong>
           </div>
+        </div>
+        <div className="workspace-view-switcher" aria-label="Workspace view" role="group">
+          <button
+            aria-pressed={workspaceView === 'analysis'}
+            onClick={() => setWorkspaceView('analysis')}
+            type="button"
+          >
+            Analysis
+          </button>
+          <button
+            aria-pressed={workspaceView === 'report'}
+            disabled={controller.metadata === null}
+            onClick={() => {
+              assisted.stopForExternalInteraction('Stopped because the report workspace opened.')
+              controller.pause()
+              setReportGeneratedAt(new Date().toISOString())
+              setWorkspaceView('report')
+            }}
+            type="button"
+          >
+            Report
+          </button>
         </div>
         <div className="workspace-bar__actions">
           {(projectError !== null || importError !== null || operationMessage !== null) && (
@@ -718,6 +849,7 @@ export function VideoWorkspace({
         />
       )}
 
+      {workspaceView === 'analysis' ? (
       <div className="workspace__body">
         <div className="analysis-area">
           <AnnotationToolbar
@@ -945,6 +1077,16 @@ export function VideoWorkspace({
           <ShortcutHelp />
         </VideoInspector>
       </div>
+      ) : (
+        <ReportWorkspace
+          onBack={() => setWorkspaceView('analysis')}
+          onExportHtml={handleExportReport}
+          onReportStateChange={setReportState}
+          report={experimentReport}
+          reportState={reportState}
+          tracks={tracking.tracks}
+        />
+      )}
       {showAssistedTrackingNotice && (
         <AssistedTrackingNotice
           onCancel={() => setShowAssistedTrackingNotice(false)}

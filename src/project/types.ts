@@ -2,6 +2,7 @@ import type { VisualizationMode } from '../analysis/types'
 import type { Annotation } from '../annotations/types'
 import type { Calibration } from '../calibration/types'
 import type { Track, TrailMode } from '../tracking/types'
+import type { ReportProjectState } from '../report/types'
 
 export const MOTIONLAB_PROJECT_FORMAT = 'motionlab'
 export const MOTIONLAB_PROJECT_VERSION = 1
@@ -30,6 +31,7 @@ export interface MotionLabProjectV1 {
   calibration: Calibration | null
   tracks: Track[]
   workspace: ProjectWorkspaceV1
+  report: ReportProjectState
 }
 
 export type ProjectParseErrorCode =

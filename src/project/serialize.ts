@@ -3,6 +3,9 @@ import type { Annotation } from '../annotations/types'
 import type { Calibration } from '../calibration/types'
 import type { Track, TrailMode } from '../tracking/types'
 import type { VideoMetadata } from '../types/video'
+import { reportProjectStateForTracks } from '../report/projectState'
+import { createDefaultReportProjectState } from '../report/projectState'
+import type { ReportProjectState } from '../report/types'
 import { validateMotionLabProject } from './schema'
 import {
   MOTIONLAB_PROJECT_FORMAT,
@@ -22,6 +25,7 @@ export interface ProjectSnapshot {
   analysisMode: VisualizationMode
   analysisExpanded: boolean
   mediaTime: number
+  report?: ReportProjectState
 }
 
 export type ProjectSerializationResult =
@@ -31,6 +35,7 @@ export type ProjectSerializationResult =
 export function createMotionLabProject(
   snapshot: ProjectSnapshot,
 ): MotionLabProjectV1 {
+  const trackIds = new Set(snapshot.tracks.map((track) => track.id))
   return {
     format: MOTIONLAB_PROJECT_FORMAT,
     version: MOTIONLAB_PROJECT_VERSION,
@@ -62,6 +67,10 @@ export function createMotionLabProject(
       analysisExpanded: snapshot.analysisExpanded,
       mediaTime: snapshot.mediaTime,
     },
+    report: reportProjectStateForTracks(
+      snapshot.report ?? createDefaultReportProjectState(),
+      trackIds,
+    ),
   }
 }
 

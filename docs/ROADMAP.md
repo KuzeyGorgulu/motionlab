@@ -267,3 +267,22 @@ Acceptance criteria:
 - Track edits, deletes, undo/redo, calibration, active-track, source, and model changes recompute diagnostics; view/selection state remains outside tracking and project history.
 - Version-1 projects, CSV/JSON semantics, Assisted Tracking, core kinematics/model formulas, local-only privacy, dependency footprint, and active workspace geometry remain unchanged.
 - Pure, integration, SVG, and Playwright coverage verifies exact/irregular/calibrated fits, residual signs and metrics, outlier boundaries, immutability, reactive correction, exact seeking, and clean export.
+
+### Phase 12 — Experiment report (complete)
+
+Turn existing project, measurement, fit, and diagnostic state into a reproducible human-readable report without creating a second scientific calculation path.
+
+Acceptance criteria:
+
+- Optional title, author, date, course/class, instructor, description, and Discussion / Notes fields are editable and persist in a validated additive report section of version-1 projects.
+- Old projects without report state open with deterministic defaults; invalid metadata, graph types, duplicate values, and stale track references remain rejected before live state changes.
+- Track inclusion, global graph-type choices, and per-track observation-table preferences persist without deleting or mutating tracks.
+- A pure report builder consumes existing Raw/Smoothed kinematics, model fits, and Phase 11 diagnostics to produce typed metadata, experiment information, track facts, summaries, model sections, deviations, graphs, observations, and provenance.
+- Summary averages use endpoint displacement or existing cumulative path distance divided by tracked duration; speed/acceleration maxima select existing finite derived values, and unavailable values remain explicit.
+- Model and potential-deviation sections appear only when their existing source data is available; statistical flags stay informational and never alter observations or fitting.
+- Position X/Y, speed, acceleration magnitude, observed-vs-fitted, and residual graph choices filter the existing visualization groups and SVG renderer rather than adding a chart implementation.
+- Optional observation tables retain full model precision and add predicted/residual columns only for an available fit while formatting unavailable cells as an em dash.
+- Print media retains only a clean light report with readable graphs/tables and controlled page breaks; browser Print / Save PDF requires no PDF dependency.
+- Standalone HTML contains embedded CSS and SVG, opens offline without MotionLab or external runtime dependencies, and never embeds the source video.
+- Focused unit/schema/export tests cover metadata, legacy compatibility, inclusion, summaries, fits, diagnostics, outliers, tables, unavailable values, deterministic output, and offline HTML; Playwright covers edit/export/save/reopen and print layout.
+- Tracking, calibration, kinematics, smoothing, models, diagnostics, project relinking, CSV/JSON/SVG semantics, local-only privacy, and dependency footprint remain intact.

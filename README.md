@@ -46,7 +46,7 @@ Seed a target once and let MotionLab follow it frame-by-frame using local templa
 
 ## Save and reopen projects
 
-Use **Project → Save project** to download a versioned `.motionlab` file containing annotations, calibration, confirmed tracks and samples, trail settings, active-track selection, analysis mode, and media time. Project files are JSON and remain under your control. They do **not** contain or upload the source video.
+Use **Project → Save project** to download a versioned `.motionlab` file containing annotations, calibration, confirmed tracks and samples, report metadata/preferences, trail settings, active-track selection, analysis mode, and media time. Project files are JSON and remain under your control. They do **not** contain or upload the source video.
 
 Use **Open project** from the import screen or workspace to restore an experiment. Browser security requires you to select the original local video again. MotionLab compares its filename, resolution, and duration when available and warns before accepting an apparent mismatch. Malformed or unsupported projects are rejected before the current workspace is changed.
 
@@ -66,6 +66,12 @@ When a motion model is selected, MotionLab derives a residual at each genuine ob
 
 The Residuals graph can show X residual, Y residual, or residual magnitude and can be exported as the current standalone SVG. Potential outliers use a conservative magnitude rule only when at least seven observations are available: `median + 4 × 1.4826 × MAD`, with strictly greater values flagged. Flags are visual review aids only—they never remove, reweight, or alter measurements, and a large residual may indicate an unsuitable model rather than a bad track point.
 
+## Experiment reports
+
+Open **Report** from the loaded-video workspace to assemble a human-readable experiment report from the current Raw or Smoothed analysis. Optional project metadata, discussion notes, track inclusion, graph choices, and per-track observation-table choices are saved in the `.motionlab` project. Measurement summaries reuse existing kinematics; an active model adds its existing fit parameters and Phase 11 diagnostics without recomputing or changing observations.
+
+The report can be printed through the browser's **Print / Save PDF** workflow or exported as a standalone offline HTML file with embedded styles and selected SVG graphs. The source video is never embedded. Average velocity is net displacement divided by tracked duration, and average speed is existing cumulative path distance divided by tracked duration; unavailable quantities remain `—`. Potential deviations remain informational, and scientific interpretation belongs in the user-written Discussion / Notes field.
+
 Track samples store exact media anchor timestamps, fallback frame-bucket references, and native-video pixel positions only. Calibration-derived world positions update live without changing the stored trajectory. The live workspace remains session-scoped unless it is explicitly saved as a project.
 
 The full-height right-side **Numerical inspector** derives position, displacement, cumulative path distance, velocity, speed, and acceleration for the active track. Results use the calibration's physical unit when available and explicit `px`, `px/s`, and `px/s²` units otherwise. A collapsible Analysis panel fills the left workspace column below the video/timeline and compares Position (X/Y), Velocity (vx/vy/Speed), or Acceleration (ax/ay/|a|) samples on shared true-timestamp axes. A live video playhead and transient time-only graph cursor support synchronization and background timestamp seeking, while selecting an actual marker seeks to its exact media anchor.
@@ -81,4 +87,4 @@ npm run build
 npm run test:e2e
 ```
 
-See `docs/PRODUCT_SPEC.md`, `docs/ARCHITECTURE.md`, and `docs/ROADMAP.md` for current scope and planned phases. Assisted tracking remains experimental. Phase 9–11 scientific-view controls and Phase 10 guidance/disclosure state are session-only and do not change the version-1 `.motionlab` schema.
+See `docs/PRODUCT_SPEC.md`, `docs/ARCHITECTURE.md`, and `docs/ROADMAP.md` for current scope and planned phases. Assisted tracking remains experimental. Phase 9–11 scientific-view controls remain session-only; Phase 12 adds a backward-compatible report section to version-1 `.motionlab` projects without persisting derived report values.

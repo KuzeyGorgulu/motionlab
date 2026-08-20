@@ -9,6 +9,10 @@ import {
 import type { Point } from '../video/geometry'
 import type { VisualizationMode } from '../analysis/types'
 import {
+  createDefaultReportProjectState,
+  parseReportProjectState,
+} from '../report/projectState'
+import {
   MOTIONLAB_PROJECT_FORMAT,
   MOTIONLAB_PROJECT_VERSION,
   type ProjectParseResult,
@@ -284,8 +288,11 @@ export function validateMotionLabProject(value: unknown): ProjectParseResult {
   }
   const tracks = parsedTracks as Track[]
   const parsedWorkspace = workspace(root.workspace, tracks)
-  if (parsedWorkspace === null) {
-    return { ok: false, code: 'invalid-schema', message: 'The project workspace metadata is invalid. Existing work is safe.' }
+  const parsedReport = root.report === undefined
+    ? createDefaultReportProjectState()
+    : parseReportProjectState(root.report, new Set(tracks.map((item) => item.id)))
+  if (parsedWorkspace === null || parsedReport === null) {
+    return { ok: false, code: 'invalid-schema', message: 'The project workspace or report metadata is invalid. Existing work is safe.' }
   }
   return {
     ok: true,
@@ -297,6 +304,7 @@ export function validateMotionLabProject(value: unknown): ProjectParseResult {
       calibration: parsedCalibration,
       tracks,
       workspace: parsedWorkspace,
+      report: parsedReport,
     },
   }
 }

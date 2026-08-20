@@ -11,6 +11,7 @@ import {
   serializeMotionLabProject,
 } from './serialize'
 import type { MotionLabProjectV1 } from './types'
+import { createDefaultReportProjectState } from '../report/projectState'
 
 function projectFixture(): MotionLabProjectV1 {
   const firstFrame = createFrameReference(0)
@@ -85,6 +86,44 @@ describe('MotionLab project schema', () => {
       video: { name: project.video.name },
     })
     expect(parsed.ok).toBe(true)
+  })
+
+  it('restores report metadata and configuration', () => {
+    const report = createDefaultReportProjectState()
+    report.metadata.title = 'Pendulum period'
+    report.metadata.notes = 'Compare repeated cycles.'
+    report.preferences.includedGraphs = ['position-x', 'residual-magnitude']
+    report.preferences.observationTableTrackIds = ['track-1']
+    const project = projectFixture()
+    const serialized = serializeMotionLabProject({ ...project, report })
+    expect(serialized.ok).toBe(true)
+    if (!serialized.ok) return
+    const parsed = parseMotionLabProject(serialized.text)
+    expect(parsed).toMatchObject({ ok: true, project: { report } })
+  })
+
+  it('opens pre-Phase-12 projects with default report settings', () => {
+    const { report: _report, ...legacyProject } = projectFixture()
+    const parsed = validateMotionLabProject(legacyProject)
+    expect(parsed).toMatchObject({
+      ok: true,
+      project: { report: createDefaultReportProjectState() },
+    })
+  })
+
+  it('rejects corrupt report references without weakening project validation', () => {
+    const project = projectFixture()
+    const parsed = validateMotionLabProject({
+      ...project,
+      report: {
+        ...project.report,
+        preferences: {
+          ...project.report.preferences,
+          excludedTrackIds: ['missing-track'],
+        },
+      },
+    })
+    expect(parsed).toMatchObject({ ok: false, code: 'invalid-schema' })
   })
 
   it('rejects corrupt JSON without throwing', () => {

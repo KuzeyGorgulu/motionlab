@@ -527,3 +527,94 @@ test('residual visualization exports diagnostic SVG without interactive chrome',
   expect(svg).toContain('Potential outlier')
   expect(svg).not.toMatch(/playhead|cursor|interaction-area|point-hit/)
 })
+
+test('experiment report edits, exports, saves, and restores report configuration', async ({ page }) => {
+  await openProject(page, PHASE11_PROJECT)
+  await relinkProjectVideo(page)
+  const analysis = page.getByRole('region', { name: 'Motion analysis' })
+  await analysis.getByRole('button', { name: 'Constant velocity', exact: true }).click()
+  await page.getByRole('button', { name: 'Report', exact: true }).click()
+
+  const report = page.getByRole('article', { name: 'Experiment report' })
+  await page.getByLabel('Experiment title').fill('Ball Motion Report')
+  await page.getByLabel('Author').fill('Student Scientist')
+  await page.getByLabel('Discussion / Notes').fill('Interpretation remains under review.')
+  await page.getByRole('group', { name: 'Included graphs' })
+    .getByLabel('Residual Magnitude vs Time').check()
+  await page.getByRole('group', { name: 'Observation tables' })
+    .getByLabel('Diagnostic Ball').check()
+
+  await expect(report.getByRole('heading', { name: 'Ball Motion Report' })).toBeVisible()
+  await expect(report.getByRole('heading', { name: 'Model Fit' })).toBeVisible()
+  await expect(report.getByRole('heading', { name: 'Potential Deviations' })).toBeVisible()
+  await expect(report.getByRole('heading', { name: 'Observations' })).toBeVisible()
+  await expect(report).toContainText('Interpretation remains under review.')
+
+  const htmlDownloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Export Report · HTML' }).click()
+  const htmlDownload = await htmlDownloadPromise
+  expect(htmlDownload.suggestedFilename()).toBe('synthetic-experiment-report.html')
+  const htmlPath = await htmlDownload.path()
+  expect(htmlPath).not.toBeNull()
+  const html = await readFile(htmlPath!, 'utf8')
+  expect(html).toContain('Ball Motion Report')
+  expect(html).toContain('Potential Deviations')
+  expect(html).toContain('<svg')
+  expect(html).toContain('<th>Pred. X</th>')
+  expect(html).not.toMatch(/<(?:video|script|link)\b/i)
+
+  await page.getByText('Project', { exact: true }).click()
+  const projectDownloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Save project' }).click()
+  const projectDownload = await projectDownloadPromise
+  const projectPath = await projectDownload.path()
+  expect(projectPath).not.toBeNull()
+  const saved = JSON.parse(await readFile(projectPath!, 'utf8')) as {
+    report: {
+      metadata: { title: string; author: string; notes: string }
+      preferences: {
+        includedGraphs: string[]
+        observationTableTrackIds: string[]
+      }
+    }
+  }
+  expect(saved.report.metadata).toMatchObject({
+    title: 'Ball Motion Report',
+    author: 'Student Scientist',
+    notes: 'Interpretation remains under review.',
+  })
+  expect(saved.report.preferences.includedGraphs).toContain('residual-magnitude')
+  expect(saved.report.preferences.observationTableTrackIds).toEqual(['track-1'])
+
+  page.once('dialog', (dialog) => dialog.accept())
+  await page.getByLabel('Choose MotionLab project file').setInputFiles(projectPath!)
+  await expect(page.getByRole('heading', { name: 'Select the original video' })).toBeVisible()
+  await relinkProjectVideo(page)
+  await page.getByRole('button', { name: 'Report', exact: true }).click()
+  await expect(page.getByLabel('Experiment title')).toHaveValue('Ball Motion Report')
+  await expect(page.getByLabel('Author')).toHaveValue('Student Scientist')
+  await expect(page.getByLabel('Discussion / Notes')).toHaveValue('Interpretation remains under review.')
+  await expect(page.getByRole('group', { name: 'Observation tables' })
+    .getByLabel('Diagnostic Ball')).toBeChecked()
+})
+
+test('report workspace exposes a clean print-only document layout', async ({ page }) => {
+  await openProject(page, PHASE11_PROJECT)
+  await relinkProjectVideo(page)
+  await page.getByRole('button', { name: 'Report', exact: true }).click()
+  await page.setViewportSize({ width: 640, height: 900 })
+  expect(await page.evaluate(() =>
+    document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+  )).toBe(true)
+  await page.emulateMedia({ media: 'print' })
+
+  await expect(page.locator('.app-header')).toBeHidden()
+  await expect(page.locator('.workspace-bar')).toBeHidden()
+  await expect(page.getByRole('complementary', { name: 'Report configuration' })).toBeHidden()
+  const reportDocument = page.getByRole('article', { name: 'Experiment report' })
+  await expect(reportDocument).toBeVisible()
+  await expect(reportDocument).toHaveCSS('background-color', 'rgb(255, 255, 255)')
+  expect(await page.evaluate(() =>
+    document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+  )).toBe(true)
+})
