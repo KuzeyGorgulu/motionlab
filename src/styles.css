@@ -2163,6 +2163,26 @@ input:disabled {
   line-height: 1.45;
 }
 
+.kinematics-model-fit {
+  margin-top: 10px;
+}
+
+.kinematics-model-fit__identity {
+  margin-bottom: 9px;
+  display: grid;
+  gap: 3px;
+}
+
+.kinematics-model-fit__identity strong {
+  color: #c8d2d7;
+  font-size: 10px;
+}
+
+.kinematics-model-fit__identity span {
+  color: #6f7d85;
+  font-size: 8px;
+}
+
 .analysis-dock {
   height: 43px;
   min-width: 0;
@@ -2272,6 +2292,70 @@ input:disabled {
   gap: 5px;
 }
 
+.analysis-controls {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(260px, 520px) minmax(0, 1fr);
+  gap: 6px 12px;
+  align-items: center;
+}
+
+.analysis-controls__row {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.analysis-control-group {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.analysis-control-group > span {
+  margin-right: 2px;
+  color: #68767e;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.analysis-control-group button {
+  height: 25px;
+  padding: 0 7px;
+  border: 1px solid #303a42;
+  border-radius: 3px;
+  color: #7d8991;
+  background: #141a1f;
+  cursor: pointer;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.analysis-control-group button:hover {
+  color: #bdc7cd;
+  border-color: #465159;
+}
+
+.analysis-control-group button[aria-pressed="true"] {
+  color: #b9e9df;
+  border-color: #35645c;
+  background: #142522;
+}
+
+.analysis-controls__note {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #69767e;
+  font-size: 8px;
+  line-height: 1.35;
+}
+
 .kinematics-series-tab {
   min-width: 0;
   height: 32px;
@@ -2378,6 +2462,27 @@ input:disabled {
   vector-effect: non-scaling-stroke;
 }
 
+.kinematics-graph__point--measured {
+  opacity: 0.58;
+}
+
+.kinematics-graph__smoothed-line,
+.kinematics-graph__model-line {
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.kinematics-graph__smoothed-line {
+  stroke-width: 1.5;
+  opacity: 0.76;
+}
+
+.kinematics-graph__model-line {
+  stroke-width: 2;
+  stroke-dasharray: 8 6;
+  opacity: 0.92;
+}
+
 .kinematics-graph__point:hover .kinematics-graph__marker-shape,
 .kinematics-graph__point:focus-visible .kinematics-graph__marker-shape {
   stroke: #ffffff;
@@ -2432,12 +2537,41 @@ input:disabled {
   gap: 10px;
 }
 
+.kinematics-graph__series-legend {
+  flex-wrap: wrap;
+}
+
 .kinematics-graph__series-legend > span {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   color: #aeb9c0;
   font-weight: 650;
+}
+
+.kinematics-graph__layer-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #89969d;
+}
+
+.kinematics-graph__layer-swatch {
+  width: 13px;
+  height: 0;
+  display: inline-block;
+  border-top: 2px solid #8d9aa1;
+}
+
+.kinematics-graph__layer-swatch--measured {
+  width: 7px;
+  height: 7px;
+  border: 1px solid #8d9aa1;
+  border-radius: 50%;
+}
+
+.kinematics-graph__layer-swatch--model {
+  border-top-style: dashed;
 }
 
 .kinematics-graph__legend-marker {
@@ -2490,6 +2624,17 @@ input:disabled {
 .kinematics-graph__empty span,
 .kinematics-graph__empty small {
   display: block;
+}
+
+@media (max-width: 1260px) {
+  .analysis-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .analysis-controls__row {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
 }
 
 .kinematics-graph__empty strong {

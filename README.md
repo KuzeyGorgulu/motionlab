@@ -1,6 +1,6 @@
 # MotionLab
 
-MotionLab is a local-first browser workspace for extracting physical measurements from ordinary videos. It provides private local video import, analysis-oriented playback controls, editable frame-associated geometry, uniform planar calibration, and manual multi-object trajectories.
+MotionLab is a local-first browser workspace for extracting physical measurements from ordinary videos. It provides private local video import, analysis-oriented playback controls, editable frame-associated geometry, uniform planar calibration, manual multi-object trajectories, and non-destructive scientific analysis.
 
 **Live Demo:** https://motionlab-qzeybei.vercel.app/
 
@@ -39,7 +39,13 @@ Use **Open project** from the import screen or workspace to restore an experimen
 
 ## Export scientific results
 
-The compact **Export** menu provides combined chronological CSV, human-readable scientific JSON, and the current graph as standalone SVG. CSV always includes stable track/sample IDs, time and frame references, native `x_px`/`y_px`, analysis space, explicit position/velocity/acceleration units, position, velocity, speed, acceleration components, and acceleration magnitude. Unavailable derivative values remain empty instead of becoming zero. SVG exports contain the graph title, axis labels, units, and measured series without the interactive playhead or cursor.
+The compact **Export** menu provides combined chronological CSV, human-readable scientific JSON, and the current graph as standalone SVG. CSV always includes stable track/sample IDs, time and frame references, native `x_px`/`y_px`, analysis space, explicit position/velocity/acceleration units, position, velocity, speed, acceleration components, and acceleration magnitude. Unavailable derivative values remain empty instead of becoming zero. CSV and JSON deliberately remain based on confirmed observations and raw derived kinematics. SVG reflects the current graph, including optional smoothing and model-fit layers, but excludes the interactive playhead, cursor, and hit targets.
+
+## Scientific smoothing and motion models
+
+Raw observations remain the default analysis source. Select **Smoothed** to fit an independent timestamp-aware local quadratic to X and Y at each genuine observation time using the nearest 5, 7, or 9 measured samples. The derived position, velocity, acceleration, displacement, and path distance update with tracking edits and calibration, while every stored `TrackSample` remains unchanged and no gaps or synthetic observations are created. Raw measurements remain visible as secondary graph markers for comparison.
+
+Optional constant-velocity and constant-acceleration least-squares models use the real, potentially irregular media timestamps in either raw or smoothed analysis space. Their parameters, RMSE, per-axis R² where defined, sample count, and time span appear in the numerical inspector; dashed graph curves are display-only and never become measurements or seek targets. Smoothing can clarify noisy trajectories, but it can also hide real rapid changes, so compare it with the raw observations and avoid treating a visually close fit as proof of a physical law.
 
 Track samples store exact media anchor timestamps, fallback frame-bucket references, and native-video pixel positions only. Calibration-derived world positions update live without changing the stored trajectory. The live workspace remains session-scoped unless it is explicitly saved as a project.
 
@@ -56,4 +62,4 @@ npm run build
 npm run test:e2e
 ```
 
-See `docs/PRODUCT_SPEC.md`, `docs/ARCHITECTURE.md`, and `docs/ROADMAP.md` for current scope and planned phases. Assisted tracking remains experimental; smoothing and model fitting are intentionally deferred beyond Phase 8.
+See `docs/PRODUCT_SPEC.md`, `docs/ARCHITECTURE.md`, and `docs/ROADMAP.md` for current scope and planned phases. Assisted tracking remains experimental. Phase 9 smoothing/model controls are session-only and do not change the version-1 `.motionlab` schema.

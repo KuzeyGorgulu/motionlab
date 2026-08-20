@@ -48,6 +48,34 @@ const PROJECT = {
   },
 }
 
+const PHASE9_PROJECT = {
+  ...PROJECT,
+  tracks: [
+    {
+      ...PROJECT.tracks[0],
+      name: 'Phase 9 Motion',
+      samples: [0, 0.04, 0.09, 0.15, 0.21, 0.27, 0.33].map((time, index) => ({
+        id: `phase-9-sample-${index}`,
+        time,
+        frame: {
+          scheme: 'timestamp-bucket-v1',
+          bucketIndex: index * 2,
+          bucketDuration: 1 / 30,
+          anchorTime: time,
+        },
+        nativePosition: {
+          x: 30 + 240 * time + [2, -1, 1.5, -2, 1, -1.5, 2][index]!,
+          y: 80 - 35 * time,
+        },
+      })),
+    },
+  ],
+  workspace: {
+    ...PROJECT.workspace,
+    analysisMode: 'position',
+  },
+}
+
 async function syntheticVideo(page: Page) {
   const bytes = await page.evaluate(async () => {
     const canvas = document.createElement('canvas')
@@ -141,7 +169,7 @@ test('project can be opened, relinked, and restored', async ({ page }) => {
   ).toBeVisible()
   const analysis = page.getByRole('region', { name: 'Motion analysis' })
   await expect(analysis.getByText(/2 valid samples/)).toBeVisible()
-  await expect(analysis.getByRole('button', { name: 'Velocity' })).toHaveAttribute(
+  await expect(analysis.getByRole('button', { name: 'Velocity', exact: true })).toHaveAttribute(
     'aria-pressed',
     'true',
   )
@@ -219,4 +247,71 @@ test('canceling a destructive remove keeps unsaved experiment data', async ({ pa
   await expect(
     page.getByRole('listitem').filter({ hasText: 'Unsaved Track' }),
   ).toBeVisible()
+})
+
+test('smoothing remains a reversible derived view of confirmed samples', async ({ page }) => {
+  await openProject(page, PHASE9_PROJECT)
+  await relinkProjectVideo(page)
+  const analysis = page.getByRole('region', { name: 'Motion analysis' })
+
+  await analysis.getByRole('button', { name: 'Smoothed', exact: true }).click()
+  await expect(analysis.getByText('Raw observations are never changed.')).toBeVisible()
+  await expect(analysis.getByRole('button', { name: '5', exact: true }))
+    .toHaveAttribute('aria-pressed', 'true')
+  const legend = analysis.getByLabel('Series legend')
+  await expect(legend.getByText('Measured', { exact: true })).toBeVisible()
+  await expect(legend.getByText('Smoothed', { exact: true })).toBeVisible()
+
+  await analysis.getByRole('button', { name: '7', exact: true }).click()
+  await expect(analysis.getByRole('button', { name: '7', exact: true }))
+    .toHaveAttribute('aria-pressed', 'true')
+
+  await page.getByText('Project', { exact: true }).click()
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Save project' }).click()
+  const download = await downloadPromise
+  const savedPath = await download.path()
+  expect(savedPath).not.toBeNull()
+  const saved = JSON.parse(await readFile(savedPath!, 'utf8')) as typeof PHASE9_PROJECT
+  expect(saved.tracks[0]?.samples).toEqual(PHASE9_PROJECT.tracks[0]?.samples)
+  expect(JSON.stringify(saved)).not.toContain('smoothed')
+
+  await analysis.getByRole('button', { name: 'Raw', exact: true }).click()
+  await expect(analysis.getByRole('button', { name: 'Raw', exact: true }))
+    .toHaveAttribute('aria-pressed', 'true')
+})
+
+test('motion model summary and non-interactive overlay appear for deterministic data', async ({ page }) => {
+  await openProject(page, PHASE9_PROJECT)
+  await relinkProjectVideo(page)
+  const analysis = page.getByRole('region', { name: 'Motion analysis' })
+
+  await analysis.getByRole('button', { name: 'Constant velocity', exact: true }).click()
+  const summary = page.getByTestId('model-fit-summary')
+  await expect(summary).toContainText('Constant velocity fit')
+  await expect(summary).toContainText('Raw observations')
+  await expect(summary).toContainText('RMSE')
+  await expect(analysis.locator('.kinematics-graph__model-line')).toHaveCount(2)
+  await expect(analysis.getByText('Model fit', { exact: true })).toBeVisible()
+})
+
+test('SVG export reflects smoothing and model layers without interactive chrome', async ({ page }) => {
+  await openProject(page, PHASE9_PROJECT)
+  await relinkProjectVideo(page)
+  const analysis = page.getByRole('region', { name: 'Motion analysis' })
+  await analysis.getByRole('button', { name: 'Smoothed', exact: true }).click()
+  await analysis.getByRole('button', { name: 'Constant acceleration', exact: true }).click()
+
+  await page.getByText('Export', { exact: true }).click()
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Current graph (SVG)' }).click()
+  const download = await downloadPromise
+  const savedPath = await download.path()
+  expect(savedPath).not.toBeNull()
+  const svg = await readFile(savedPath!, 'utf8')
+  expect(svg).toContain('Measured')
+  expect(svg).toContain('Smoothed')
+  expect(svg).toContain('Model fit')
+  expect(svg).toContain('stroke-dasharray="8 6"')
+  expect(svg).not.toMatch(/playhead|cursor|interaction-area|point-hit/)
 })

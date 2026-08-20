@@ -2,6 +2,10 @@ import { useMemo } from 'react'
 
 import { selectVisualizationGroup } from '../../analysis/series'
 import type {
+  AnalysisSource,
+  MotionModelFit,
+  MotionModelType,
+  SmoothingWindowSize,
   TrackKinematics,
   VisualizationMode,
 } from '../../analysis/types'
@@ -10,14 +14,22 @@ import { KinematicsGraph } from './KinematicsGraph'
 
 interface AnalysisPanelProps {
   track: Track | null
+  rawAnalysis: TrackKinematics | null
   analysis: TrackKinematics | null
+  analysisError: string | null
+  analysisSource: AnalysisSource
+  model: MotionModelType
+  modelFit: MotionModelFit | null
   activeSampleId: string | null
   currentTime: number
   expanded: boolean
   mode: VisualizationMode
+  onAnalysisSourceChange: (source: AnalysisSource['type']) => void
+  onModelChange: (model: MotionModelType) => void
   onModeChange: (mode: VisualizationMode) => void
   onSeekTime: (time: number) => void
   onToggleExpanded: () => void
+  onWindowChange: (windowSize: SmoothingWindowSize) => void
 }
 
 const MODES: Array<{ key: VisualizationMode; label: string }> = [
@@ -26,20 +38,42 @@ const MODES: Array<{ key: VisualizationMode; label: string }> = [
   { key: 'acceleration', label: 'Acceleration' },
 ]
 
+const MODELS: Array<{ key: MotionModelType; label: string }> = [
+  { key: 'none', label: 'None' },
+  { key: 'constant-velocity', label: 'Constant velocity' },
+  { key: 'constant-acceleration', label: 'Constant acceleration' },
+]
+
+const WINDOWS: SmoothingWindowSize[] = [5, 7, 9]
+
 export function AnalysisPanel({
   track,
+  rawAnalysis,
   analysis,
+  analysisError,
+  analysisSource,
+  model,
+  modelFit,
   activeSampleId,
   currentTime,
   expanded,
   mode,
+  onAnalysisSourceChange,
+  onModelChange,
   onModeChange,
   onSeekTime,
   onToggleExpanded,
+  onWindowChange,
 }: AnalysisPanelProps) {
   const group = useMemo(
-    () => (analysis === null ? null : selectVisualizationGroup(analysis, mode)),
-    [analysis, mode],
+    () => analysis === null
+      ? null
+      : selectVisualizationGroup(analysis, mode, {
+          analysisSource: analysisSource.type,
+          rawAnalysis,
+          modelFit,
+        }),
+    [analysis, analysisSource.type, mode, modelFit, rawAnalysis],
   )
   const panelBodyId = 'motion-analysis-panel-body'
 
@@ -61,7 +95,7 @@ export function AnalysisPanel({
         <span
           className={analysis?.space === 'world' ? 'analysis-space analysis-space--world' : 'analysis-space'}
         >
-          {analysis?.space ?? 'idle'}
+          {analysis?.space ?? rawAnalysis?.space ?? 'idle'}
         </span>
         <button
           aria-controls={panelBodyId}
@@ -77,7 +111,7 @@ export function AnalysisPanel({
 
       {expanded && (
         <div className="analysis-dock__body" id={panelBodyId}>
-          {track === null || analysis === null ? (
+          {track === null ? (
             <div className="analysis-dock__empty">
               Create and select a track to plot position and motion.
             </div>
@@ -87,20 +121,78 @@ export function AnalysisPanel({
             </div>
           ) : (
             <>
-              <div className="kinematics-series-tabs" aria-label="Visualization quantity">
-                {MODES.map((option) => (
-                  <button
-                    aria-pressed={mode === option.key}
-                    className={mode === option.key ? 'kinematics-series-tab kinematics-series-tab--active' : 'kinematics-series-tab'}
-                    key={option.key}
-                    onClick={() => onModeChange(option.key)}
-                    type="button"
-                  >
-                    {option.label}
-                  </button>
-                ))}
+              <div className="analysis-controls">
+                <div className="kinematics-series-tabs" aria-label="Visualization quantity">
+                  {MODES.map((option) => (
+                    <button
+                      aria-pressed={mode === option.key}
+                      className={mode === option.key ? 'kinematics-series-tab kinematics-series-tab--active' : 'kinematics-series-tab'}
+                      key={option.key}
+                      onClick={() => onModeChange(option.key)}
+                      type="button"
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="analysis-controls__row">
+                  <div className="analysis-control-group" aria-label="Analysis data source" role="group">
+                    <span>Data</span>
+                    {(['raw', 'smoothed'] as const).map((source) => (
+                      <button
+                        aria-pressed={analysisSource.type === source}
+                        key={source}
+                        onClick={() => onAnalysisSourceChange(source)}
+                        type="button"
+                      >
+                        {source === 'raw' ? 'Raw' : 'Smoothed'}
+                      </button>
+                    ))}
+                  </div>
+                  {analysisSource.type === 'smoothed' && (
+                    <div className="analysis-control-group" aria-label="Smoothing window" role="group">
+                      <span>Window</span>
+                      {WINDOWS.map((windowSize) => (
+                        <button
+                          aria-pressed={analysisSource.windowSize === windowSize}
+                          key={windowSize}
+                          onClick={() => onWindowChange(windowSize)}
+                          type="button"
+                        >
+                          {windowSize}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="analysis-control-group analysis-control-group--model" aria-label="Motion model" role="group">
+                    <span>Model</span>
+                    {MODELS.map((option) => (
+                      <button
+                        aria-pressed={model === option.key}
+                        key={option.key}
+                        onClick={() => onModelChange(option.key)}
+                        type="button"
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {analysisSource.type === 'smoothed' && (
+                  <p className="analysis-controls__note">
+                    Smoothing fits a local quadratic to measured samples. Raw observations are never changed.
+                  </p>
+                )}
               </div>
-              {group !== null && (
+              {analysisError !== null ? (
+                <div className="kinematics-graph">
+                  <div className="kinematics-graph__empty" role="status">
+                    <strong>Smoothed analysis unavailable</strong>
+                    <span>{analysisError}</span>
+                    <small>Switch to Raw to inspect the confirmed observations.</small>
+                  </div>
+                </div>
+              ) : group !== null ? (
                 <KinematicsGraph
                   activeSampleId={activeSampleId}
                   color={track.color}
@@ -108,7 +200,7 @@ export function AnalysisPanel({
                   group={group}
                   onSeekTime={onSeekTime}
                 />
-              )}
+              ) : null}
             </>
           )}
         </div>

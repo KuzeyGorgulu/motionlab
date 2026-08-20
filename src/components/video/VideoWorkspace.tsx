@@ -8,11 +8,14 @@ import {
 } from 'react'
 
 import { deriveTrackKinematics } from '../../analysis/kinematics'
+import { fitMotionModel } from '../../analysis/modelFit'
 import {
   INITIAL_ANALYSIS_PANEL_STATE,
   reduceAnalysisPanelState,
 } from '../../analysis/panelState'
 import { selectVisualizationGroup } from '../../analysis/series'
+import { deriveSmoothedTrackKinematics } from '../../analysis/smoothing'
+import type { MotionModelFitResult } from '../../analysis/types'
 import type { AnnotationTool } from '../../annotations/types'
 import { useAssistedTracking } from '../../hooks/useAssistedTracking'
 import { useAnnotationWorkspace } from '../../hooks/useAnnotationWorkspace'
@@ -128,6 +131,8 @@ export function VideoWorkspace({
       : {
           expanded: restoredProject.workspace.analysisExpanded,
           mode: restoredProject.workspace.analysisMode,
+          source: { type: 'raw' },
+          model: 'none',
         },
   )
   const [showAssistedTrackingNotice, setShowAssistedTrackingNotice] =
@@ -138,17 +143,59 @@ export function VideoWorkspace({
   } | null>(null)
   const restoredMediaTimeApplied = useRef(false)
   const controlsEnabled = controller.metadata !== null && controller.mediaError === null
-  const trackAnalysis = useMemo(
+  const rawTrackAnalysis = useMemo(
     () => tracking.activeTrack === null
       ? null
       : deriveTrackKinematics(tracking.activeTrack, calibration.calibration),
     [calibration.calibration, tracking.activeTrack],
   )
+  const smoothingResult = useMemo(
+    () => tracking.activeTrack === null || analysisPanel.source.type === 'raw'
+      ? null
+      : deriveSmoothedTrackKinematics(
+          tracking.activeTrack,
+          calibration.calibration,
+          analysisPanel.source.windowSize,
+        ),
+    [analysisPanel.source, calibration.calibration, tracking.activeTrack],
+  )
+  const trackAnalysis = analysisPanel.source.type === 'raw'
+    ? rawTrackAnalysis
+    : smoothingResult?.ok
+      ? smoothingResult.analysis
+      : null
+  const analysisError = analysisPanel.source.type === 'smoothed' && smoothingResult !== null && !smoothingResult.ok
+    ? smoothingResult.message
+    : null
+  const modelFitResult = useMemo<MotionModelFitResult | null>(() => {
+    if (analysisPanel.model === 'none') return null
+    if (trackAnalysis === null) {
+      return {
+        ok: false,
+        message: analysisError ?? 'Model fitting requires available analysis samples.',
+      }
+    }
+    return fitMotionModel(
+      trackAnalysis,
+      analysisPanel.model,
+      analysisPanel.source.type,
+    )
+  }, [analysisError, analysisPanel.model, analysisPanel.source.type, trackAnalysis])
   const visualizationGroup = useMemo(
     () => trackAnalysis === null
       ? null
-      : selectVisualizationGroup(trackAnalysis, analysisPanel.mode),
-    [analysisPanel.mode, trackAnalysis],
+      : selectVisualizationGroup(trackAnalysis, analysisPanel.mode, {
+          analysisSource: analysisPanel.source.type,
+          rawAnalysis: rawTrackAnalysis,
+          modelFit: modelFitResult?.ok ? modelFitResult.fit : null,
+        }),
+    [
+      analysisPanel.mode,
+      analysisPanel.source.type,
+      modelFitResult,
+      rawTrackAnalysis,
+      trackAnalysis,
+    ],
   )
   const relinkComparison = useMemo(
     () => initialProject === null || controller.metadata === null
@@ -736,9 +783,19 @@ export function VideoWorkspace({
         <AnalysisPanel
           activeSampleId={tracking.currentSample?.id ?? null}
           analysis={trackAnalysis}
+          analysisError={analysisError}
+          analysisSource={analysisPanel.source}
           currentTime={controller.currentTime}
           expanded={analysisPanel.expanded}
+          model={analysisPanel.model}
+          modelFit={modelFitResult?.ok ? modelFitResult.fit : null}
           mode={analysisPanel.mode}
+          onAnalysisSourceChange={(source) => {
+            dispatchAnalysisPanel({ type: 'select-source', source })
+          }}
+          onModelChange={(model) => {
+            dispatchAnalysisPanel({ type: 'select-model', model })
+          }}
           onModeChange={(mode) => {
             dispatchAnalysisPanel({ type: 'select-mode', mode })
           }}
@@ -746,6 +803,10 @@ export function VideoWorkspace({
           onToggleExpanded={() => {
             dispatchAnalysisPanel({ type: 'toggle-expanded' })
           }}
+          onWindowChange={(windowSize) => {
+            dispatchAnalysisPanel({ type: 'select-window', windowSize })
+          }}
+          rawAnalysis={rawTrackAnalysis}
           track={tracking.activeTrack}
         />
         <VideoInspector metadata={controller.metadata} source={source}>
@@ -817,7 +878,10 @@ export function VideoWorkspace({
           />
           <KinematicsPanel
             analysis={trackAnalysis}
+            analysisSource={analysisPanel.source}
             currentSample={tracking.currentSample}
+            model={analysisPanel.model}
+            modelFitResult={modelFitResult}
             track={tracking.activeTrack}
           />
           <AnnotationInspector

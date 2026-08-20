@@ -7,6 +7,17 @@ export type VelocityUnit = `${PositionUnit}/s`
 export type AccelerationUnit = `${PositionUnit}/s²`
 export type AnalysisSpace = 'pixel' | 'world'
 
+export type SmoothingWindowSize = 5 | 7 | 9
+
+export type AnalysisSource =
+  | { type: 'raw' }
+  | { type: 'smoothed'; windowSize: SmoothingWindowSize }
+
+export type MotionModelType =
+  | 'none'
+  | 'constant-velocity'
+  | 'constant-acceleration'
+
 export interface VectorQuantity extends Point {
   magnitude: number
 }
@@ -33,6 +44,63 @@ export interface TrackKinematics {
   accelerationUnit: AccelerationUnit
   samples: KinematicSample[]
 }
+
+export interface SmoothedKinematicSample extends KinematicSample {
+  velocity: VectorQuantity
+  acceleration: VectorQuantity
+  rawNativePosition: Point
+  rawPosition: Point
+  smoothedPosition: Point
+  smoothedVelocity: VectorQuantity
+  smoothedAcceleration: VectorQuantity
+}
+
+export interface SmoothedTrackKinematics extends TrackKinematics {
+  analysisSource: { type: 'smoothed'; windowSize: SmoothingWindowSize }
+  samples: SmoothedKinematicSample[]
+}
+
+export type SmoothingResult =
+  | { ok: true; analysis: SmoothedTrackKinematics }
+  | { ok: false; message: string }
+
+export interface MotionFitMetrics {
+  rmse: number
+  rSquaredX: number | null
+  rSquaredY: number | null
+}
+
+interface BaseMotionModelFit extends MotionFitMetrics {
+  t0: number
+  x0: number
+  y0: number
+  sampleCount: number
+  timeSpan: number
+  source: AnalysisSource['type']
+}
+
+export interface ConstantVelocityFit extends BaseMotionModelFit {
+  type: 'constant-velocity'
+  vx: number
+  vy: number
+  speed: number
+}
+
+export interface ConstantAccelerationFit extends BaseMotionModelFit {
+  type: 'constant-acceleration'
+  vx0: number
+  vy0: number
+  ax: number
+  ay: number
+  initialSpeed: number
+  accelerationMagnitude: number
+}
+
+export type MotionModelFit = ConstantVelocityFit | ConstantAccelerationFit
+
+export type MotionModelFitResult =
+  | { ok: true; fit: MotionModelFit }
+  | { ok: false; message: string }
 
 export type VisualizationMode = 'position' | 'velocity' | 'acceleration'
 
@@ -73,6 +141,10 @@ export interface VisualizationGroup {
   unit: PositionUnit | VelocityUnit | AccelerationUnit
   timeline: AnalysisTimePoint[]
   series: VisualizationSeries[]
+  measuredSeries: VisualizationSeries[]
+  modelSeries: VisualizationSeries[]
+  analysisSource: AnalysisSource['type']
+  modelType: MotionModelType
 }
 
 export interface ChartPoint extends GraphDataPoint {

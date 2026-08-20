@@ -49,12 +49,14 @@ function Marker({
   size,
   fill,
   active,
+  secondary = false,
 }: {
   point: ChartPoint
   shape: MarkerShape
   size: number
   fill: string
   active: boolean
+  secondary?: boolean
 }) {
   return (
     <>
@@ -69,14 +71,16 @@ function Marker({
           className="kinematics-graph__marker-shape"
           cx={point.x}
           cy={point.y}
-          fill={fill}
+          fill={secondary ? 'transparent' : fill}
+          style={secondary ? { stroke: fill } : undefined}
           r={size}
         />
       )}
       {shape === 'square' && (
         <rect
           className="kinematics-graph__marker-shape"
-          fill={fill}
+          fill={secondary ? 'transparent' : fill}
+          style={secondary ? { stroke: fill } : undefined}
           height={size * 2}
           width={size * 2}
           x={point.x - size}
@@ -87,7 +91,8 @@ function Marker({
         <path
           className="kinematics-graph__marker-shape"
           d={`M ${point.x} ${point.y - size} L ${point.x + size} ${point.y} L ${point.x} ${point.y + size} L ${point.x - size} ${point.y} Z`}
-          fill={fill}
+          fill={secondary ? 'transparent' : fill}
+          style={secondary ? { stroke: fill } : undefined}
         />
       )}
       {active && (
@@ -114,9 +119,13 @@ export function KinematicsGraph({
   const measuredSize = useElementSize(plotRef)
   const width = measuredSize.width > 0 ? measuredSize.width : FALLBACK_WIDTH
   const height = measuredSize.height > 0 ? measuredSize.height : FALLBACK_HEIGHT
+  const allSeries = useMemo(
+    () => [...group.measuredSeries, ...group.series, ...group.modelSeries],
+    [group.measuredSeries, group.modelSeries, group.series],
+  )
   const layout = useMemo(
-    () => createChartLayout(group.series, group.timeline, width, height),
-    [group.series, group.timeline, height, width],
+    () => createChartLayout(allSeries, group.timeline, width, height),
+    [allSeries, group.timeline, height, width],
   )
 
   useEffect(() => {
@@ -170,6 +179,10 @@ export function KinematicsGraph({
     : mediaTimeToSvgX(cursorTime, timeDomain, layout.plot)
   const sampleCount = Math.max(0, ...group.series.map((series) => series.points.length))
   const markerSize = markerRadiusForSampleCount(sampleCount)
+  const analysisOffset = group.measuredSeries.length
+  const modelOffset = analysisOffset + group.series.length
+  const seriesPath = (points: readonly ChartPoint[]) =>
+    points.map((point) => `${point.x},${point.y}`).join(' ')
 
   type GraphPointerEvent =
     | ReactPointerEvent<SVGSVGElement>
@@ -202,7 +215,7 @@ export function KinematicsGraph({
     <div className="kinematics-graph">
       <div className="kinematics-graph__plot" ref={plotRef}>
         <svg
-          aria-label={`${group.label} components against media time in ${group.unit}. ${group.series.map((series) => series.label).join(', ')}.`}
+          aria-label={`${group.label} components against media time in ${group.unit}. ${group.series.map((series) => series.label).join(', ')}. ${group.analysisSource === 'smoothed' ? 'Measured observations and smoothed analysis shown.' : 'Measured observations shown.'}${group.modelType === 'none' ? '' : ' Analytic model fit shown.'}`}
           onClick={(event) => {
             const time = timeAtPointer(event)
             if (time !== null) onSeekTime(time)
@@ -321,17 +334,17 @@ export function KinematicsGraph({
               />
             )}
           </g>
-          {group.series.map((series, seriesIndex) => {
-            const seriesLayout = layout.series.find((item) => item.key === series.key)
+          {group.measuredSeries.map((series, seriesIndex) => {
+            const seriesLayout = layout.series[seriesIndex]
             const seriesColor = colorForSeries(seriesIndex, color)
             return seriesLayout?.points.map((point) => {
               const active = point.sampleId === activeSampleId
               const activate = () => onSeekTime(point.time)
               return (
                 <g
-                  aria-label={`${series.label} ${formatAnalysisNumber(point.value)} ${group.unit} at ${formatTimestamp(point.time)}. Seek video.`}
-                  className={active ? 'kinematics-graph__point kinematics-graph__point--active' : 'kinematics-graph__point'}
-                  key={`${series.key}-${point.sampleId}`}
+                  aria-label={`Measured ${series.label} ${formatAnalysisNumber(point.value)} ${group.unit} at ${formatTimestamp(point.time)}. Seek video.`}
+                  className={active ? 'kinematics-graph__point kinematics-graph__point--measured kinematics-graph__point--active' : 'kinematics-graph__point kinematics-graph__point--measured'}
+                  key={`measured-${series.key}-${point.sampleId}`}
                   onClick={(event) => {
                     event.stopPropagation()
                     activate()
@@ -350,15 +363,80 @@ export function KinematicsGraph({
                     active={active}
                     fill={seriesColor}
                     point={point}
+                    secondary
                     shape={series.marker}
                     size={active ? markerSize + 1 : markerSize}
                   />
                   <title>
-                    {series.label} · {formatAnalysisNumber(point.value)} {group.unit} · {formatTimestamp(point.time)}
+                    Measured {series.label} · {formatAnalysisNumber(point.value)} {group.unit} · {formatTimestamp(point.time)}
                   </title>
                 </g>
               )
             })
+          })}
+          {group.series.map((series, seriesIndex) => {
+            const seriesLayout = layout.series[analysisOffset + seriesIndex]
+            const seriesColor = colorForSeries(seriesIndex, color)
+            return (
+              <g key={`analysis-${series.key}`}>
+                {group.analysisSource === 'smoothed' && (seriesLayout?.points.length ?? 0) > 1 && (
+                  <polyline
+                    className="kinematics-graph__smoothed-line"
+                    fill="none"
+                    points={seriesPath(seriesLayout?.points ?? [])}
+                    stroke={seriesColor}
+                  />
+                )}
+                {seriesLayout?.points.map((point) => {
+                  const active = point.sampleId === activeSampleId
+                  const activate = () => onSeekTime(point.time)
+                  return (
+                    <g
+                      aria-label={`${group.analysisSource === 'smoothed' ? 'Smoothed ' : ''}${series.label} ${formatAnalysisNumber(point.value)} ${group.unit} at ${formatTimestamp(point.time)}. Seek video.`}
+                      className={active ? 'kinematics-graph__point kinematics-graph__point--active' : 'kinematics-graph__point'}
+                      key={`${series.key}-${point.sampleId}`}
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        activate()
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          event.stopPropagation()
+                          activate()
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <Marker
+                        active={active}
+                        fill={seriesColor}
+                        point={point}
+                        shape={series.marker}
+                        size={active ? markerSize + 1 : markerSize}
+                      />
+                      <title>
+                        {series.label} · {formatAnalysisNumber(point.value)} {group.unit} · {formatTimestamp(point.time)}
+                      </title>
+                    </g>
+                  )
+                })}
+              </g>
+            )
+          })}
+          {group.modelSeries.map((series, seriesIndex) => {
+            const seriesLayout = layout.series[modelOffset + seriesIndex]
+            return (seriesLayout?.points.length ?? 0) > 0 ? (
+              <polyline
+                aria-hidden="true"
+                className="kinematics-graph__model-line"
+                fill="none"
+                key={`model-${series.key}`}
+                points={seriesPath(seriesLayout?.points ?? [])}
+                stroke={colorForSeries(seriesIndex, color)}
+              />
+            ) : null
           })}
         </svg>
       </div>
@@ -374,6 +452,24 @@ export function KinematicsGraph({
               {series.label}
             </span>
           ))}
+          {group.analysisSource === 'smoothed' && (
+            <span className="kinematics-graph__layer-key">
+              <i aria-hidden="true" className="kinematics-graph__layer-swatch kinematics-graph__layer-swatch--measured" />
+              Measured
+            </span>
+          )}
+          {group.analysisSource === 'smoothed' && (
+            <span className="kinematics-graph__layer-key">
+              <i aria-hidden="true" className="kinematics-graph__layer-swatch kinematics-graph__layer-swatch--smoothed" />
+              Smoothed
+            </span>
+          )}
+          {group.modelType !== 'none' && (
+            <span className="kinematics-graph__layer-key">
+              <i aria-hidden="true" className="kinematics-graph__layer-swatch kinematics-graph__layer-swatch--model" />
+              Model fit
+            </span>
+          )}
         </div>
         <div className="kinematics-graph__sync-readout">
           <span className="kinematics-graph__video-time">
@@ -384,7 +480,9 @@ export function KinematicsGraph({
           </span>
         </div>
         <span className="kinematics-graph__method-note">
-          Samples only · no interpolation
+          {group.analysisSource === 'smoothed'
+            ? 'Smoothing evaluated at observations'
+            : 'Samples only · no interpolation'}
         </span>
       </div>
     </div>

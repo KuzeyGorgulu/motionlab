@@ -216,3 +216,20 @@ Acceptance criteria:
 - Unit coverage locks schema round trips, version/corruption rejection, relink comparison, multiple-track export, calibration units, unavailable derivatives, CSV escaping, and graph generation.
 - Six Playwright scenarios cover save, open/relink/restore, CSV/SVG export, malformed-project safety, mismatch warning, and canceled destructive removal using only a generated local test video.
 - Privacy, relinking, export fields, browser limitations, and Assisted Tracking's unchanged experimental status are documented; no server, telemetry, account, upload, or cloud dependency is introduced.
+
+### Phase 9 — Scientific smoothing and motion-model fitting (complete)
+
+Add an optional non-destructive scientific layer above confirmed timestamped observations while keeping raw analysis as the unchanged default.
+
+Acceptance criteria:
+
+- Raw `TrackSample` identity, timestamp/frame reference, and native position remain immutable; smoothing creates no samples, fills no gaps, and never enters tracking history.
+- Smoothed analysis uses actual irregular media timestamps, deterministic nearest 5/7/9-sample neighborhoods, centered/normalized local quadratic least squares, and asymmetric boundary windows.
+- Smoothed position, analytic velocity/acceleration, displacement, and path distance stay in the existing calibrated-world or pixel analysis space and fail safely for fewer than five or degenerate observations.
+- Constant-velocity and constant-acceleration fits operate on the selected raw/smoothed source and report coefficients, spatial RMSE, safe per-axis R², sample count, and time span.
+- The compact Analysis controls expose source, window, and model choices; the numerical inspector identifies the selected fit source and uses existing unit/number conventions.
+- Graphs preserve raw evidence beside smoothing and render models as non-interactive dashed analytic overlays without changing playhead, cursor, or exact observation seeking.
+- Standalone SVG reflects current measured/smoothed/model layers while excluding interactive chrome; CSV/JSON remain confirmed-observation/raw-kinematics exports.
+- Phase 9 controls remain session-only, so existing version-1 `.motionlab` validation, save/open/relink, and project semantics remain unchanged.
+- Pure unit/integration tests cover exact/noisy/irregular/calibrated/degenerate trajectories, immutability, metrics, recomputation, graph export, and Phase 8 compatibility; focused Playwright scenarios cover smoothing, model summary/overlay, and layered SVG.
+- No numerical, statistics, chart, server, account, upload, telemetry, or other runtime dependency is added, and Assisted Tracking algorithms remain unchanged.

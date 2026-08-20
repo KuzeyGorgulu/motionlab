@@ -36,10 +36,10 @@ describe('analysis panel state', () => {
     const beforeCollapse = selectVisualizationGroup(analysis, state.mode)
 
     state = reduceAnalysisPanelState(state, { type: 'toggle-expanded' })
-    expect(state).toEqual({ expanded: false, mode: 'velocity' })
+    expect(state).toMatchObject({ expanded: false, mode: 'velocity' })
 
     state = reduceAnalysisPanelState(state, { type: 'toggle-expanded' })
-    expect(state).toEqual({ expanded: true, mode: 'velocity' })
+    expect(state).toMatchObject({ expanded: true, mode: 'velocity' })
     expect(selectVisualizationGroup(analysis, state.mode)).toEqual(beforeCollapse)
   })
 
@@ -54,5 +54,34 @@ describe('analysis panel state', () => {
     expect(first.series[0]?.points[2]).toMatchObject({ time: 2, value: 4 })
     expect(second.series[0]?.points[2]).toMatchObject({ time: 2, value: 10 })
     expect(state.mode).toBe('position')
+  })
+
+  it('defaults to raw/no-model and changes derived controls without touching other state', () => {
+    expect(INITIAL_ANALYSIS_PANEL_STATE).toMatchObject({
+      source: { type: 'raw' },
+      model: 'none',
+    })
+    let state = reduceAnalysisPanelState(INITIAL_ANALYSIS_PANEL_STATE, {
+      type: 'select-source',
+      source: 'smoothed',
+    })
+    state = reduceAnalysisPanelState(state, {
+      type: 'select-window',
+      windowSize: 9,
+    })
+    state = reduceAnalysisPanelState(state, {
+      type: 'select-model',
+      model: 'constant-acceleration',
+    })
+    expect(state).toMatchObject({
+      expanded: true,
+      mode: 'position',
+      source: { type: 'smoothed', windowSize: 9 },
+      model: 'constant-acceleration',
+    })
+    expect(reduceAnalysisPanelState(state, {
+      type: 'select-source',
+      source: 'raw',
+    }).source).toEqual({ type: 'raw' })
   })
 })

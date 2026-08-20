@@ -16,7 +16,7 @@ function isUsableDelta(delta: number): boolean {
   return Number.isFinite(delta) && delta > MIN_TIME_DELTA_SECONDS
 }
 
-function vectorQuantity(x: number, y: number): VectorQuantity | null {
+export function createVectorQuantity(x: number, y: number): VectorQuantity | null {
   const magnitude = Math.hypot(x, y)
   return Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(magnitude)
     ? { x, y, magnitude }
@@ -31,7 +31,7 @@ function twoPointDerivative(
 ): VectorQuantity | null {
   const dt = secondTime - firstTime
   if (!isUsableDelta(dt)) return null
-  return vectorQuantity((second.x - first.x) / dt, (second.y - first.y) / dt)
+  return createVectorQuantity((second.x - first.x) / dt, (second.y - first.y) / dt)
 }
 
 /**
@@ -62,7 +62,7 @@ function threePointDerivative(
   const weight1 = (2 * targetTime - t0 - t2) / denominator1
   const weight2 = (2 * targetTime - t0 - t1) / denominator2
 
-  return vectorQuantity(
+  return createVectorQuantity(
     weight0 * points[0].x + weight1 * points[1].x + weight2 * points[2].x,
     weight0 * points[0].y + weight1 * points[1].y + weight2 * points[2].y,
   )
@@ -162,7 +162,7 @@ export function deriveAccelerationSeries(
   })
 }
 
-function unitMetadata(positionUnit: PositionUnit) {
+export function unitMetadata(positionUnit: PositionUnit) {
   return {
     positionUnit,
     velocityUnit: `${positionUnit}/s` as const,
@@ -170,38 +170,37 @@ function unitMetadata(positionUnit: PositionUnit) {
   }
 }
 
-export function deriveTrackKinematics(
-  track: Track,
-  calibration: Calibration | null,
+export interface KinematicSeriesInput {
+  source: TrackSample
+  position: Point
+  velocity: VectorQuantity | null
+  acceleration: VectorQuantity | null
+}
+
+/**
+ * Applies the shared displacement, path-distance, magnitude, and unit semantics
+ * to either measured-position derivatives or another explicit derived series.
+ */
+export function createTrackKinematicsFromSeries(
+  trackId: string,
+  space: TrackKinematics['space'],
+  positionUnit: PositionUnit,
+  series: readonly KinematicSeriesInput[],
 ): TrackKinematics {
-  const sourceSamples = normalizeSamplesForAnalysis(track.samples)
-  const samplesWithPositions = sourceSamples.flatMap((source) => {
-    const position =
-      calibration === null
-        ? source.nativePosition
-        : pixelToWorld(source.nativePosition, calibration)
-    if (position === null) return []
-    const positionVector = vectorQuantity(position.x, position.y)
-    return positionVector === null
-      ? []
-      : [{ source, position, positionMagnitude: positionVector.magnitude }]
-  })
-  const times = samplesWithPositions.map(({ source }) => source.time)
-  const positions = samplesWithPositions.map(({ position }) => position)
-  const velocities = deriveVelocitySeries(times, positions)
-  const accelerations = deriveAccelerationSeries(times, velocities)
   const derivedSamples: KinematicSample[] = []
   let cumulativeDistance: number | null = 0
 
-  for (let index = 0; index < samplesWithPositions.length; index += 1) {
-    const { source, position, positionMagnitude } = samplesWithPositions[index]!
-    const previous = samplesWithPositions[index - 1]
+  for (let index = 0; index < series.length; index += 1) {
+    const { source, position, velocity, acceleration } = series[index]!
+    const positionVector = createVectorQuantity(position.x, position.y)
+    if (positionVector === null) continue
+    const previous = series[index - 1]
     let displacementFromPrevious = null
 
     if (previous !== undefined) {
       const dt = source.time - previous.source.time
       if (isUsableDelta(dt)) {
-        const displacement = vectorQuantity(
+        const displacement = createVectorQuantity(
           position.x - previous.position.x,
           position.y - previous.position.y,
         )
@@ -221,21 +220,54 @@ export function deriveTrackKinematics(
     derivedSamples.push({
       source,
       position,
-      positionMagnitude,
+      positionMagnitude: positionVector.magnitude,
       displacementFromPrevious,
       cumulativeDistance,
-      velocity: velocities[index] ?? null,
-      acceleration: accelerations[index] ?? null,
+      velocity,
+      acceleration,
     })
   }
 
-  const positionUnit: PositionUnit = calibration?.unit ?? 'px'
   return {
-    trackId: track.id,
-    space: calibration === null ? 'pixel' : 'world',
+    trackId,
+    space,
     ...unitMetadata(positionUnit),
     samples: derivedSamples,
   }
+}
+
+export function deriveTrackKinematics(
+  track: Track,
+  calibration: Calibration | null,
+): TrackKinematics {
+  const sourceSamples = normalizeSamplesForAnalysis(track.samples)
+  const samplesWithPositions = sourceSamples.flatMap((source) => {
+    const position =
+      calibration === null
+        ? source.nativePosition
+        : pixelToWorld(source.nativePosition, calibration)
+    if (position === null) return []
+    const positionVector = createVectorQuantity(position.x, position.y)
+    return positionVector === null
+      ? []
+      : [{ source, position }]
+  })
+  const times = samplesWithPositions.map(({ source }) => source.time)
+  const positions = samplesWithPositions.map(({ position }) => position)
+  const velocities = deriveVelocitySeries(times, positions)
+  const accelerations = deriveAccelerationSeries(times, velocities)
+  const positionUnit: PositionUnit = calibration?.unit ?? 'px'
+  return createTrackKinematicsFromSeries(
+    track.id,
+    calibration === null ? 'pixel' : 'world',
+    positionUnit,
+    samplesWithPositions.map(({ source, position }, index) => ({
+      source,
+      position,
+      velocity: velocities[index] ?? null,
+      acceleration: accelerations[index] ?? null,
+    })),
+  )
 }
 
 export function kinematicsForSample(
