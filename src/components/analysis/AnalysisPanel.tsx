@@ -113,11 +113,13 @@ export function AnalysisPanel({
         <div className="analysis-dock__body" id={panelBodyId}>
           {track === null ? (
             <div className="analysis-dock__empty">
-              Create and select a track to plot position and motion.
+              <strong>No motion data yet</strong>
+              <span>Create a track in Tracking, then mark the object across several video positions.</span>
             </div>
           ) : track.samples.length === 0 ? (
             <div className="analysis-dock__empty">
-              Mark the first sample to begin graphing this track.
+              <strong>No measurements to graph</strong>
+              <span>Choose Mark point in Tracking and place the object on the paused video.</span>
             </div>
           ) : (
             <>
@@ -143,6 +145,9 @@ export function AnalysisPanel({
                         aria-pressed={analysisSource.type === source}
                         key={source}
                         onClick={() => onAnalysisSourceChange(source)}
+                        title={source === 'raw'
+                          ? 'Use the confirmed measurements exactly as recorded'
+                          : 'Reduce measurement noise without changing recorded points'}
                         type="button"
                       >
                         {source === 'raw' ? 'Raw' : 'Smoothed'}
@@ -157,6 +162,7 @@ export function AnalysisPanel({
                           aria-pressed={analysisSource.windowSize === windowSize}
                           key={windowSize}
                           onClick={() => onWindowChange(windowSize)}
+                          title={`Use ${windowSize} nearby measurements for local smoothing`}
                           type="button"
                         >
                           {windowSize}
@@ -171,6 +177,11 @@ export function AnalysisPanel({
                         aria-pressed={model === option.key}
                         key={option.key}
                         onClick={() => onModelChange(option.key)}
+                        title={option.key === 'none'
+                          ? 'Show measurements without a fitted motion model'
+                          : option.key === 'constant-velocity'
+                            ? 'Fit motion with steady velocity over time'
+                            : 'Fit motion with steady acceleration over time'}
                         type="button"
                       >
                         {option.label}

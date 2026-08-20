@@ -100,13 +100,19 @@ export function CalibrationPanel({
   const isCapturing = mode !== 'idle'
 
   return (
-    <section className="inspector__section calibration-panel">
+    <section className="inspector__section calibration-panel" id="calibration-panel">
       <div className="inspector__heading-row">
         <h2>Calibration</h2>
         <span className={calibration === null ? 'calibration-status' : 'calibration-status calibration-status--active'}>
-          {calibration === null ? 'Off' : 'Active'}
+          {calibration === null ? 'Optional' : 'Ready'}
         </span>
       </div>
+
+      <p className="calibration-intro">
+        {calibration === null
+          ? 'Optional — convert pixel measurements to real-world units. Pixel analysis is still available.'
+          : `Physical measurements are active in ${calibration.unit}.`}
+      </p>
 
       {mode === 'scale-points' && (
         <div className="calibration-task" role="status">
@@ -139,7 +145,7 @@ export function CalibrationPanel({
       {mode === 'origin' && (
         <div className="calibration-task" role="status">
           <strong>Set world origin</strong>
-          <span>Click the native-video position that should become (0, 0).</span>
+          <span>Click the video point that should become (0, 0).</span>
           <button onClick={onCancel} type="button">Cancel</button>
         </div>
       )}
@@ -157,7 +163,7 @@ export function CalibrationPanel({
       {!isCapturing && calibration === null && (
         <>
           <p className="calibration-empty">
-            Define a known length to replace pixel measurements with physical units.
+            Add a scale by marking a known length in the scene and entering its real distance.
           </p>
           <button className="calibration-action calibration-action--primary calibration-action--wide" onClick={onBeginScale} type="button">
             Create calibration

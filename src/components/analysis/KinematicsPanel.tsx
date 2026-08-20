@@ -105,7 +105,7 @@ function PositionSection({
       <dl className="kinematics-values">
         <div><dt>Timestamp</dt><dd>{formatTimestamp(sample.source.time)}</dd></div>
         <div>
-          <dt>Native</dt>
+          <dt>Video point</dt>
           <dd>{sample.source.nativePosition.x.toFixed(1)}, {sample.source.nativePosition.y.toFixed(1)} px</dd>
         </div>
         <div><dt>x</dt><dd>{formatted(sample.position.x, analysis.positionUnit)}</dd></div>
@@ -191,9 +191,15 @@ export function KinematicsPanel({
       </div>
 
       {track === null ? (
-        <p className="kinematics-empty">Create and select a track to analyze its motion.</p>
+        <div className="kinematics-empty">
+          <strong>No motion data yet</strong>
+          <span>Create a track in Tracking, then mark the object across several video positions.</span>
+        </div>
       ) : track.samples.length === 0 ? (
-        <p className="kinematics-empty">Mark the first sample to begin position analysis.</p>
+        <div className="kinematics-empty">
+          <strong>No motion measurements yet</strong>
+          <span>Choose Mark point in Tracking and place the first point on the paused video.</span>
+        </div>
       ) : analysis === null ? (
         <>
           <p className="kinematics-empty">
@@ -219,9 +225,10 @@ export function KinematicsPanel({
           </div>
 
           {sample === null ? (
-            <p className="kinematics-current-empty">
-              Seek to a tracked timestamp or select a point in the Analysis panel.
-            </p>
+            <div className="kinematics-current-empty">
+              <strong>No measurement at this video position</strong>
+              <span>Select a sample below or choose a marker in the Analysis graph.</span>
+            </div>
           ) : (
             <div className="kinematics-current">
               <PositionSection analysis={analysis} sample={sample} />

@@ -132,6 +132,32 @@ async function relinkProjectVideo(page: Page) {
     .toBeVisible()
 }
 
+async function loadSyntheticVideo(page: Page) {
+  await page.getByLabel('Choose video file').setInputFiles(await syntheticVideo(page))
+  await expect(page.getByRole('complementary', { name: 'Workspace inspector' }))
+    .toBeVisible()
+}
+
+async function createTrackAndMarkSamples(page: Page, count: number) {
+  await page.getByLabel('New track name').fill('Guided Ball')
+  await page.getByRole('button', { name: 'Create', exact: true }).click()
+  await page.getByLabel(/Advance after mark/).check()
+  await page.getByRole('button', { name: 'Mark point (T)' }).click()
+  const canvas = page.getByRole('application', {
+    name: /Video measurement canvas\. Active tool: tracking-mark/,
+  })
+  await expect(canvas).toBeVisible()
+
+  for (let index = 0; index < count; index += 1) {
+    const previousTime = await page.getByLabel('Current timestamp').textContent()
+    await canvas.click({ position: { x: 90 + index * 24, y: 90 } })
+    await expect(page.locator('.track-samples__heading span')).toHaveText(String(index + 1))
+    if (index < count - 1) {
+      await expect(page.getByLabel('Current timestamp')).not.toHaveText(previousTime ?? '')
+    }
+  }
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto('/')
 })
@@ -139,8 +165,8 @@ test.beforeEach(async ({ page }) => {
 test('basic experiment can load a video, create a track, and save a project', async ({
   page,
 }) => {
-  await page.getByLabel('Choose video file').setInputFiles(await syntheticVideo(page))
-  await expect(page.getByRole('heading', { name: 'Manual tracking' })).toBeVisible()
+  await loadSyntheticVideo(page)
+  await expect(page.getByRole('heading', { name: 'Tracking' })).toBeVisible()
   await page.getByLabel('New track name').fill('E2E Ball')
   await page.getByRole('button', { name: 'Create', exact: true }).click()
 
@@ -314,4 +340,74 @@ test('SVG export reflects smoothing and model layers without interactive chrome'
   expect(svg).toContain('Model fit')
   expect(svg).toContain('stroke-dasharray="8 6"')
   expect(svg).not.toMatch(/playhead|cursor|interaction-area|point-hit/)
+})
+
+test('guided workflow progresses from a first track through manual marking', async ({ page }) => {
+  await loadSyntheticVideo(page)
+  const guide = page.locator('.getting-started')
+  await expect(guide.getByText('Create your first track', { exact: true })).toBeVisible()
+  await expect(guide.getByText('Optional', { exact: true })).toBeVisible()
+
+  await page.getByLabel('New track name').fill('Guided Ball')
+  await page.getByRole('button', { name: 'Create', exact: true }).click()
+  await expect(guide.locator('.getting-started__task')).toContainText('Mark the object')
+
+  await page.getByLabel(/Advance after mark/).check()
+  await page.getByRole('button', { name: 'Mark point (T)' }).click()
+  const canvas = page.getByRole('application', {
+    name: /Video measurement canvas\. Active tool: tracking-mark/,
+  })
+  for (let index = 0; index < 3; index += 1) {
+    const previousTime = await page.getByLabel('Current timestamp').textContent()
+    await canvas.click({ position: { x: 90 + index * 24, y: 90 } })
+    await expect(page.locator('.track-samples__heading span')).toHaveText(String(index + 1))
+    if (index === 0) {
+      await expect(guide.locator('.getting-started__task')).toContainText('Keep tracking')
+    }
+    if (index < 2) {
+      await expect(page.getByLabel('Current timestamp')).not.toHaveText(previousTime ?? '')
+    }
+  }
+
+  await expect(guide.locator('.getting-started__task')).toContainText('Analyze motion')
+  await expect(guide.locator('.inspector__heading-row')).toContainText('3/3')
+})
+
+test('secondary inspector details are collapsed, keyboard operable, and state neutral', async ({ page }) => {
+  await loadSyntheticVideo(page)
+  await page.getByLabel('New track name').fill('Disclosure Track')
+  await page.getByRole('button', { name: 'Create', exact: true }).click()
+
+  const videoDetails = page.locator('details.inspector-disclosure').filter({ hasText: 'Video details' })
+  const videoSummary = videoDetails.locator('summary')
+  await expect(videoDetails).not.toHaveAttribute('open', '')
+  await expect(videoDetails.getByText('File size', { exact: true })).not.toBeVisible()
+  await videoSummary.focus()
+  await videoSummary.press('Enter')
+  await expect(videoDetails.getByText('File size', { exact: true })).toBeVisible()
+
+  const timingDetails = page.locator('details.inspector-disclosure').filter({ hasText: 'Advanced timing' })
+  const timingSummary = timingDetails.locator('summary')
+  await expect(timingDetails.getByText(/Exact adjacent-frame access/)).not.toBeVisible()
+  await timingSummary.focus()
+  await timingSummary.press('Enter')
+  await expect(timingDetails.getByText(/Exact adjacent-frame access/)).toBeVisible()
+
+  const shortcutDetails = page.locator('details.inspector-disclosure').filter({ hasText: 'Keyboard shortcuts' })
+  await shortcutDetails.locator('summary').click()
+  await expect(shortcutDetails.getByText('Play or pause', { exact: true })).toBeVisible()
+  await expect(page.getByRole('listitem').filter({ hasText: 'Disclosure Track' })).toBeVisible()
+})
+
+test('guided analysis exposes synchronized graphs and numerical outcomes', async ({ page }) => {
+  await loadSyntheticVideo(page)
+  await createTrackAndMarkSamples(page, 3)
+  await expect(page.locator('.getting-started__task')).toContainText('Analyze motion')
+
+  const analysis = page.getByRole('region', { name: 'Motion analysis' })
+  await analysis.getByRole('button', { name: 'Position', exact: true }).click()
+  await expect(analysis.getByRole('group', { name: /Position components against media time/ }))
+    .toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Numerical inspector' })).toBeVisible()
+  await expect(page.locator('.kinematics-track-title')).toContainText('3 valid samples')
 })

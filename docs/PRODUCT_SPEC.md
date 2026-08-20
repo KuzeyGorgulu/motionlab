@@ -20,6 +20,8 @@ Raw kinematics remains the default. A non-destructive Smoothed source evaluates 
 
 Experiments can be downloaded as validated version-1 `.motionlab` JSON projects and reopened through explicit local-video relinking. A project stores scientifically relevant annotation, calibration, confirmed-track, and workspace metadata but never embeds video or transient Assisted Tracking state. Combined chronological CSV and human-readable JSON exports reuse the existing kinematics derivation, and the selected analysis graph can be exported as a standalone labeled SVG.
 
+A compact **Getting started** guide now turns those capabilities into a visible task sequence. It derives a current action from loaded video, optional calibration, active track, and confirmed sample count; it does not own experiment state. The inspector prioritizes calibration, tracking, numerical outcomes, and annotations, while keyboard shortcuts, video metadata, exact timing caveats, and idle experimental assistance use progressive disclosure. Empty states explain both what is missing and the action that will make them useful.
+
 ## Intended users
 
 - Students performing mechanics experiments without specialist camera equipment.
@@ -27,15 +29,25 @@ Experiments can be downloaded as validated version-1 `.motionlab` JSON projects 
 - Makers and experimenters who want inspectable measurements rather than opaque automated answers.
 - Anyone who needs a free tool whose video does not leave their computer.
 
+## Guided UX principles
+
+- Keep one interface that is simple by default and detailed on demand; do not split the product into beginner and advanced modes.
+- Keep the normal experiment path visible: import, optionally calibrate, create a track, mark positions, then inspect analysis.
+- Treat calibration as an enhancement for physical units, never a blocker for pixel-based analysis.
+- Keep manual tracking primary and Assisted Tracking visibly experimental and review-based.
+- Prefer plain task language in the main workflow; keep codec, fallback timing, and other implementation detail available on demand.
+- Derive guidance from existing domain state so it cannot disagree with or mutate the experiment.
+
 ## Planned workflow
 
-1. Import a local video and inspect it with analysis-oriented playback controls.
-2. Add and adjust frame-local geometry to inspect points, pixel distances, and angles.
-3. Calibrate real-world scale and define the coordinate system.
-4. Record object positions manually, optionally using experimental assisted tracking as a conservative accelerator.
-5. Correct the track and calculate position, displacement, velocity, and acceleration from timestamps.
-6. Inspect trajectory overlays, graphs, and numerical results.
-7. Save the experiment for later relinking or export raw and processed measurement data.
+1. Load a local video and inspect it with analysis-oriented playback controls.
+2. Optionally calibrate real-world scale and define the coordinate system; continue in pixels otherwise.
+3. Create a track for the object to measure.
+4. Mark object positions manually or use experimental assisted tracking as a conservative accelerator.
+5. Analyze synchronized graphs and numerical position, velocity, and acceleration results while correcting the track as needed.
+6. Save the experiment for later relinking or export raw and processed measurement data.
+
+Frame-local Point, Line, and Angle annotations remain directly available alongside this standard motion workflow.
 
 ## Final planned capabilities
 
@@ -83,7 +95,7 @@ Expected limitations include fast or sudden motion, severe motion blur, occlusio
 
 ## Project and export assumptions
 
-The version-1 project schema contains the original video name with optional duration and native dimensions, annotations and frame references, calibration and coordinate-axis metadata, confirmed tracks/samples, active-track identity, trail and mark-advance preferences, analysis mode/collapse state, and media time. It excludes Object URLs, video bytes, undo stacks, pointer drafts, worker execution, templates, predictions, diagnostics, and unaccepted Assisted Tracking suggestions. Parsing is read-then-validate; only a valid project can replace the live workspace.
+The version-1 project schema contains the original video name with optional duration and native dimensions, annotations and frame references, calibration and coordinate-axis metadata, confirmed tracks/samples, active-track identity, trail and mark-advance preferences, analysis mode/collapse state, and media time. It excludes Object URLs, video bytes, undo stacks, pointer drafts, worker execution, templates, predictions, diagnostics, unaccepted Assisted Tracking suggestions, Getting Started status, and inspector disclosure state. Parsing is read-then-validate; only a valid project can replace the live workspace.
 
 Opening a project requires the user to select a local video. Filename, dimensions, and duration are compared when present. A mismatch is visible and can be rejected by choosing another video or explicitly accepted with an alignment warning. Validated project state initializes a newly mounted workspace atomically.
 

@@ -35,13 +35,15 @@ MotionLab is a client-only React and TypeScript application built with Vite. The
 - `src/components/analysis/KinematicsPanel.tsx` presents compact current-sample quantities in the right inspector.
 - `src/components/analysis/AnalysisPanel.tsx` presents graph selection and the collapsible analysis dock below the video/timeline in the flexible left workspace column.
 - `src/components/analysis/KinematicsGraph.tsx` renders the responsive, dependency-free multi-series SVG, live video playhead, transient graph cursor, accessible markers, and timestamp-seek interactions.
+- `src/ux/workflowGuidance.ts` is a pure selector that derives the beginner workflow step/status and next task from existing video, calibration, track, and sample facts.
+- `src/components/guidance/GettingStartedPanel.tsx`, `DisclosureSection.tsx`, and `ShortcutHelp.tsx` present task guidance and native keyboard-accessible progressive disclosures without owning scientific data.
 - `src/math/geometry.ts` owns generic point distance and angle math shared by annotations and calibration; the Phase 2 annotation path remains a compatibility re-export.
 - `src/video/geometry.ts` contains pure aspect-fit and display/native coordinate conversions.
 - `src/video/timing.ts` contains timestamp formatting, safe media-time clamping, and the fallback frame-step policy.
 - `src/video/frameReference.ts` owns the domain-neutral timestamp-bucket reference used by annotations and tracks; the original annotation module remains a compatibility boundary.
 - `src/styles.css` defines the current application styling without a runtime styling dependency.
 
-React component state is used for transient media/UI state. Annotation domain data uses a reducer, while unfinished drafts and drag previews remain transient. A global state library would not add value yet. Live experiment data is session-scoped until the user explicitly downloads a project. The assisted-tracking experimental acknowledgement is a single in-memory `App` flag: the first seed request opens a modal notice, `Continue` acknowledges it and resumes that seed request, and all later reseeds in the same application session bypass the notice. It is intentionally not stored in tracking history, browser storage, or telemetry.
+React component state is used for transient media/UI state. Annotation domain data uses a reducer, while unfinished drafts and drag previews remain transient. A global state library would not add value yet. Live experiment data is session-scoped until the user explicitly downloads a project. Phase 10 workflow guidance is recomputed from existing facts and native `<details>` elements own only ephemeral disclosure state; neither enters a reducer, history, browser storage, or the project schema. The assisted-tracking experimental acknowledgement is a single in-memory `App` flag: the first seed request opens a modal notice, `Continue` acknowledges it and resumes that seed request, and all later reseeds in the same application session bypass the notice. It is intentionally not stored in tracking history, browser storage, or telemetry.
 
 Calibration has a separate reducer and is also session-only. `VideoWorkspace` is keyed by the local Object URL, so video replacement remounts all video-scoped domain controllers; the calibration and tracking reducers additionally define explicit `video-replaced` reset transitions for testability. Calibration changes are not placed in annotation or tracking undo history. Calibration undo can be added later as an independent history if demonstrated workflow needs justify it.
 
@@ -59,7 +61,7 @@ Meaningful annotations, calibration, or tracks activate lightweight discard conf
 
 ## Workspace layout
 
-The active desktop workspace is a two-column CSS Grid. The flexible left column contains the video/annotation stage and transport in its upper row and the collapsible Analysis dock in its lower row. The 320–360 px right inspector spans both rows, so calibration, tracking, numerical analysis, annotation, and source controls form one continuous rail and the graph never extends beneath them. The inspector is the only independently scrolling desktop region; its stable scrollbar gutter avoids changing control width as content grows.
+The active desktop workspace is a two-column CSS Grid. The flexible left column contains the video/annotation stage and transport in its upper row and the collapsible Analysis dock in its lower row. The 320–360 px right inspector spans both rows. Its task-first order is Getting Started, optional calibration, tracking, numerical analysis, and current-frame annotations, followed by shortcut help, collapsed video details, collapsed advanced timing, and the local-privacy notice. Idle Assisted Tracking detail is collapsed within Tracking and opens while an assisted session is active. The graph never extends beneath the inspector, which remains the only independently scrolling desktop region; its stable scrollbar gutter avoids changing control width as content grows.
 
 At 980 px and below, the grid becomes one column in document order: video/timeline, Analysis, then inspector. The inspector returns to normal page flow and uses two internal columns until the existing narrow-screen breakpoint reduces it to one. Graph sizing remains based on its left-workspace container rather than the contained video's visible rectangle, so portrait-video letterboxing cannot narrow the graph.
 
@@ -219,7 +221,7 @@ Native duration may be unavailable, non-finite, or revised during loading. Seeki
 
 ## Error and accessibility boundaries
 
-The media controller reports unsupported/corrupt media and playback failures instead of silently swallowing them. Controls are native buttons, ranges, and selects with labels, focus treatment, and disabled states. Space toggles playback and Left/Right perform approximate steps only when focus is not inside an interactive or editable element.
+The media controller reports unsupported/corrupt media and playback failures instead of silently swallowing them. Controls are native buttons, ranges, selects, summaries, and details with labels, visible focus treatment, and disabled states. Disclosure summaries retain native Enter/Space operation and do not conceal required task controls. Space toggles playback and Left/Right perform approximate steps only when focus is not inside an interactive or editable element.
 
 ## Keyboard interaction
 
@@ -236,6 +238,6 @@ Shortcuts are ignored while focus is in normal interactive/form controls.
 
 - Canvas rendering can evolve into distinct overlay layers without changing native-coordinate storage.
 - The `AssistedTracker` interface can accept a later optical-flow, WASM, or ML implementation without changing tracks, acceptance, or the UI session contract.
-- Project persistence can be introduced after a stable project schema exists, likely with IndexedDB.
+- Optional browser-managed recent-project persistence could build on the stable project schema, likely with IndexedDB.
 
-Smoothing, model fitting, multi-track graph comparison, interpolation, persistence, perspective correction, and export do not exist in the current codebase. Assisted tracking is only the documented conservative template prototype, not general object tracking. Annotation and tracking undo histories are in-memory and use bounded full immutable snapshots; a command/delta model can replace them if large projects demonstrate a measured need. Calibration currently has no undo history and must be reset or edited explicitly. Timestamp buckets remain an approximate fallback identity until a decoded-frame-aware strategy is available.
+Multi-track graph comparison, interpolation, perspective correction, uncertainty propagation, and browser-managed persistence do not exist in the current codebase. Assisted tracking is only the documented conservative template prototype, not general object tracking. Annotation and tracking undo histories are in-memory and use bounded full immutable snapshots; a command/delta model can replace them if large projects demonstrate a measured need. Calibration currently has no undo history and must be reset or edited explicitly. Timestamp buckets remain an approximate fallback identity until a decoded-frame-aware strategy is available.

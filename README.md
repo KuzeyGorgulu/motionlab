@@ -17,9 +17,22 @@ npm run dev
 
 Then open the local URL printed by Vite and select or drop a video file. Pause on a useful frame and use Select, Point, Line, or Angle above the video.
 
+## Guided workflow
+
+The Phase 10 UX principle is **simple by default, detailed on demand**. The **Getting started** guide derives the next useful action from the current experiment without blocking normal controls or storing separate workflow state.
+
+1. Load a video.
+2. Optionally calibrate for real-world units.
+3. Create a track.
+4. Mark manually or use experimental Assisted Tracking.
+5. Analyze the motion.
+6. Save the project or export results.
+
+Calibration is optional; pixel-based tracking and analysis remain available without it. Core tasks stay visible, while Assisted Tracking, keyboard shortcuts, video metadata, and exact timing caveats are available on demand in compact disclosures.
+
 To calibrate, choose **Create calibration** in the inspector, click two video points whose real separation is known, then enter the distance and unit. Reference A becomes the default world origin and A → B the default positive X direction; both can be changed independently. A rightward X axis produces upward positive Y. Lines then show physical lengths and Points show derived world coordinates.
 
-To track an object, create and select a track in **Manual tracking**, enter **Mark point** mode (or press `T`), click the object, step with Left/Right, and repeat. Marking the same timestamp bucket again moves the existing sample instead of creating a duplicate. Enable **Advance after mark** for a click-and-step workflow. **Edit current** lets you drag the active track's sample, and sample rows seek to their exact stored anchor timestamps. Trail visibility can show past/current samples, all samples with future history muted, or only the current sample.
+To track an object, create and select a track in **Tracking**, enter **Mark point** mode (or press `T`), click the object, step with Left/Right, and repeat. Marking the same timestamp bucket again moves the existing sample instead of creating a duplicate. Enable **Advance after mark** for a click-and-step workflow. **Edit current** lets you drag the active track's sample, and sample rows seek to their exact stored anchor timestamps. Trail visibility can show past/current samples, all samples with future history muted, or only the current sample.
 
 **Assisted tracking (Experimental)** is a productivity aid for semi-automatic tracking, not guaranteed fully automatic object tracking. Select a track, pause on the target, choose **Seed target** (or use an existing current-frame sample), then start the forward-only run. Resolution-aware coarse search handles larger motion, full-resolution refinement preserves native-pixel observations, nearby refined hypotheses are grouped into one local match basin, and recent timestamped motion guides an adaptive predicted-first search. If that search is uncertain, one wider bounded corridor pass tolerates acceleration before normal multi-frame recovery begins. The physical point you clicked remains the measured anchor. Suggestions appear as a dashed trajectory with hollow markers and remain transient until **Accept suggestions** is chosen; **Discard** leaves confirmed track data unchanged apart from an explicitly created seed. An uncertain frame is left unmeasured while a short bounded recovery searches subsequent frames; successful reacquisition resumes normally without filling the gap. Persistent loss, invalid frames, confirmed-sample conflicts, or video end stop visibly instead of creating guessed points. Accepted suggestions become ordinary editable samples in one undoable batch.
 
@@ -62,4 +75,4 @@ npm run build
 npm run test:e2e
 ```
 
-See `docs/PRODUCT_SPEC.md`, `docs/ARCHITECTURE.md`, and `docs/ROADMAP.md` for current scope and planned phases. Assisted tracking remains experimental. Phase 9 smoothing/model controls are session-only and do not change the version-1 `.motionlab` schema.
+See `docs/PRODUCT_SPEC.md`, `docs/ARCHITECTURE.md`, and `docs/ROADMAP.md` for current scope and planned phases. Assisted tracking remains experimental. Phase 9 smoothing/model controls and Phase 10 guidance/disclosure state are session-only and do not change the version-1 `.motionlab` schema.

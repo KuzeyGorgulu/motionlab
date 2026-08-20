@@ -92,7 +92,7 @@ export function AnnotationInspector({
         </ul>
       )}
       <p className="annotation-inspector__scope">
-        Native video pixels · current timestamp bucket only
+        Video coordinates · current video position only
       </p>
     </section>
   )

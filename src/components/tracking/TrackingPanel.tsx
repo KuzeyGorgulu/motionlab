@@ -114,13 +114,23 @@ export function TrackingPanel({
   const assistedInteractionActive = assistedSession.status !== 'idle'
 
   return (
-    <section className="inspector__section tracking-panel">
+    <section className="inspector__section tracking-panel" id="tracking-panel">
       <div className="inspector__heading-row">
-        <h2>Manual tracking</h2>
+        <h2>Tracking</h2>
         <span className={mode === 'idle' ? '' : 'tracking-status--active'}>
-          {mode === 'idle' ? tracks.length : mode}
+          {mode === 'idle'
+            ? `${tracks.length} track${tracks.length === 1 ? '' : 's'}`
+            : mode === 'mark'
+              ? 'Marking'
+              : mode === 'edit'
+                ? 'Editing'
+                : 'Selecting target'}
         </span>
       </div>
+
+      <p className="tracking-intro">
+        Create a track, then measure the object manually or use experimental assistance.
+      </p>
 
       <form className="tracking-create" onSubmit={submitNewTrack}>
         <label>
@@ -136,9 +146,10 @@ export function TrackingPanel({
       </form>
 
       {tracks.length === 0 ? (
-        <p className="tracking-empty">
-          Create a track, pause on the object, then mark its position across timestamps.
-        </p>
+        <div className="tracking-empty">
+          <strong>No tracks yet</strong>
+          <span>Create your first track for the object whose motion you want to measure.</span>
+        </div>
       ) : (
         <div className="track-switcher" role="list" aria-label="Tracks">
           {tracks.map((track) => {
@@ -163,6 +174,22 @@ export function TrackingPanel({
 
       {activeTrack !== null && (
         <>
+          <div className="tracking-next-action" aria-live="polite">
+            <strong>
+              {activeTrack.samples.length === 0
+                ? 'Mark the object'
+                : activeTrack.samples.length < 3
+                  ? 'Keep tracking'
+                  : 'Motion data ready'}
+            </strong>
+            <span>
+              {activeTrack.samples.length === 0
+                ? 'Pause the video, choose Mark point, then click the object.'
+                : activeTrack.samples.length < 3
+                  ? 'Add measurements at more video positions for useful motion analysis.'
+                  : 'Continue refining points or inspect the Analysis graph and numerical results.'}
+            </span>
+          </div>
           <div className="tracking-mode-actions">
             <button
               aria-pressed={mode === 'mark'}
@@ -185,13 +212,16 @@ export function TrackingPanel({
           </div>
 
           <label className="tracking-advance">
-            <input
-              checked={advanceAfterMark}
-              disabled={assistedInteractionActive}
-              onChange={(event) => onAdvanceAfterMarkChange(event.target.checked)}
-              type="checkbox"
-            />
-            Advance after mark (approx. 30 fps)
+            <span>
+              <input
+                checked={advanceAfterMark}
+                disabled={assistedInteractionActive}
+                onChange={(event) => onAdvanceAfterMarkChange(event.target.checked)}
+                type="checkbox"
+              />
+              Advance after mark
+            </span>
+            <small>Automatically steps forward by one approximate frame after placing a point.</small>
           </label>
 
           <AssistedTrackingControls
@@ -239,7 +269,7 @@ export function TrackingPanel({
               <p>Use Mark point and click the object on this frame.</p>
             ) : (
               <dl>
-                <div><dt>Native</dt><dd>{currentCoordinates?.native}</dd></div>
+                <div><dt>Video point</dt><dd>{currentCoordinates?.native}</dd></div>
                 {currentCoordinates?.world !== null && (
                   <div><dt>World</dt><dd>{currentCoordinates?.world}</dd></div>
                 )}
@@ -266,7 +296,7 @@ export function TrackingPanel({
               <span>{activeTrack.samples.length}</span>
             </div>
             {activeTrack.samples.length === 0 ? (
-              <p>No samples yet.</p>
+              <p>No measurements yet. Use Mark point and click the object on the paused video.</p>
             ) : (
               <ol>
                 {activeTrack.samples.map((sample) => {
@@ -312,7 +342,7 @@ export function TrackingPanel({
       )}
 
       <p className="annotation-inspector__scope">
-        Native positions · timestamp buckets · session only
+        Confirmed video points · frame-associated · editable
       </p>
     </section>
   )

@@ -233,3 +233,20 @@ Acceptance criteria:
 - Phase 9 controls remain session-only, so existing version-1 `.motionlab` validation, save/open/relink, and project semantics remain unchanged.
 - Pure unit/integration tests cover exact/noisy/irregular/calibrated/degenerate trajectories, immutability, metrics, recomputation, graph export, and Phase 8 compatibility; focused Playwright scenarios cover smoothing, model summary/overlay, and layered SVG.
 - No numerical, statistics, chart, server, account, upload, telemetry, or other runtime dependency is added, and Assisted Tracking algorithms remain unchanged.
+
+### Phase 10 — Guided UX and workflow polish (complete)
+
+Make the implemented experiment workflow easier to discover without changing scientific, tracking, persistence, or local-only behavior.
+
+Acceptance criteria:
+
+- A compact Getting Started guide derives four visible steps and the current next action from existing video, calibration, selected-track, and confirmed-sample state.
+- The standard path is clear: import a video, optionally calibrate, create a track, mark the object across multiple video positions, then inspect synchronized analysis.
+- Calibration is explicitly optional and pixel-based tracking/analysis remains available; manual Tracking stays primary and Assisted Tracking stays visibly experimental.
+- Empty tracking, numerical, graph, and annotation states explain what is missing and name the action that makes the area useful.
+- Inspector order prioritizes Getting Started, calibration, tracking, numerical results, and annotations; shortcut help, video details, and advanced timing use native progressive disclosure.
+- Main workflow copy uses task language such as video point and approximate frame stepping, while exact timestamp/fallback caveats remain available in Advanced timing.
+- Raw/smoothed and motion-model controls retain unchanged computation and gain concise contextual explanations.
+- Guidance and disclosure state remain presentation-only and never enter the version-1 `.motionlab` schema, domain histories, scientific data, or exports.
+- Pure selector tests cover empty, calibrated, tracked, partially marked, ready, and selected-track states; Playwright covers manual progression, keyboard disclosures/state neutrality, and graph/numerical outcomes.
+- Responsive layout, focus visibility, native keyboard operation, local-file privacy, project/export behavior, assisted-tracking algorithms, and dependency footprint remain intact.

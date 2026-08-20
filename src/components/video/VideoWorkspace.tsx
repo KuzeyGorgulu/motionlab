@@ -44,6 +44,8 @@ import { AnnotationToolbar } from '../annotations/AnnotationToolbar'
 import { AnalysisPanel } from '../analysis/AnalysisPanel'
 import { KinematicsPanel } from '../analysis/KinematicsPanel'
 import { CalibrationPanel } from '../calibration/CalibrationPanel'
+import { GettingStartedPanel } from '../guidance/GettingStartedPanel'
+import { ShortcutHelp } from '../guidance/ShortcutHelp'
 import { FilmIcon, TrashIcon } from '../Icons'
 import { VideoRelinkWarning } from '../project/VideoRelinkWarning'
 import { WorkspaceFileActions } from '../project/WorkspaceFileActions'
@@ -810,6 +812,11 @@ export function VideoWorkspace({
           track={tracking.activeTrack}
         />
         <VideoInspector metadata={controller.metadata} source={source}>
+          <GettingStartedPanel
+            activeTrackId={tracking.activeTrackId}
+            hasCalibration={calibration.calibration !== null}
+            tracks={tracking.tracks}
+          />
           <CalibrationPanel
             calibration={calibration.calibration}
             error={calibration.error}
@@ -898,6 +905,7 @@ export function VideoWorkspace({
             }}
             selectedId={annotations.selectedId}
           />
+          <ShortcutHelp />
         </VideoInspector>
       </div>
       {showAssistedTrackingNotice && (

@@ -4,7 +4,7 @@ import {
   StepBackIcon,
   StepForwardIcon,
 } from '../Icons'
-import { FALLBACK_FRAME_RATE, formatTimestamp } from '../../video/timing'
+import { formatTimestamp } from '../../video/timing'
 
 const PLAYBACK_RATES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2]
 
@@ -89,13 +89,9 @@ export function TransportControls({
           </button>
         </div>
 
-        <div className="transport__status" title="Browser video seeking does not guarantee exact adjacent-frame decoding">
+        <div className="transport__status" title="See Advanced timing in the inspector for implementation details">
           <span className="status-dot" aria-hidden="true" />
-          <span>
-            Step ≈ {(1000 / FALLBACK_FRAME_RATE).toFixed(1)} ms
-          </span>
-          <span className="separator" aria-hidden="true">/</span>
-          <span>{FALLBACK_FRAME_RATE} fps fallback</span>
+          <span>Approximate frame stepping</span>
         </div>
 
         <label className="rate-control">
