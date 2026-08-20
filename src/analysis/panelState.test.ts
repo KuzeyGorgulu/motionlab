@@ -58,6 +58,8 @@ describe('analysis panel state', () => {
 
   it('defaults to raw/no-model and changes derived controls without touching other state', () => {
     expect(INITIAL_ANALYSIS_PANEL_STATE).toMatchObject({
+      view: 'motion',
+      residualMode: 'residual-magnitude',
       source: { type: 'raw' },
       model: 'none',
     })
@@ -73,11 +75,21 @@ describe('analysis panel state', () => {
       type: 'select-model',
       model: 'constant-acceleration',
     })
+    state = reduceAnalysisPanelState(state, {
+      type: 'select-view',
+      view: 'residuals',
+    })
+    state = reduceAnalysisPanelState(state, {
+      type: 'select-residual-mode',
+      mode: 'residual-y',
+    })
     expect(state).toMatchObject({
       expanded: true,
       mode: 'position',
       source: { type: 'smoothed', windowSize: 9 },
       model: 'constant-acceleration',
+      view: 'residuals',
+      residualMode: 'residual-y',
     })
     expect(reduceAnalysisPanelState(state, {
       type: 'select-source',

@@ -1,12 +1,12 @@
-import { useMemo } from 'react'
-
-import { selectVisualizationGroup } from '../../analysis/series'
 import type {
   AnalysisSource,
-  MotionModelFit,
+  AnalysisSpace,
+  AnalysisView,
   MotionModelType,
+  ResidualVisualizationMode,
   SmoothingWindowSize,
   TrackKinematics,
+  VisualizationGroup,
   VisualizationMode,
 } from '../../analysis/types'
 import type { Track } from '../../tracking/types'
@@ -14,21 +14,26 @@ import { KinematicsGraph } from './KinematicsGraph'
 
 interface AnalysisPanelProps {
   track: Track | null
-  rawAnalysis: TrackKinematics | null
   analysis: TrackKinematics | null
+  analysisSpace: AnalysisSpace | null
   analysisError: string | null
   analysisSource: AnalysisSource
+  group: VisualizationGroup | null
   model: MotionModelType
-  modelFit: MotionModelFit | null
+  modelFitError: string | null
   activeSampleId: string | null
   currentTime: number
   expanded: boolean
+  view: AnalysisView
   mode: VisualizationMode
+  residualMode: ResidualVisualizationMode
   onAnalysisSourceChange: (source: AnalysisSource['type']) => void
   onModelChange: (model: MotionModelType) => void
   onModeChange: (mode: VisualizationMode) => void
+  onResidualModeChange: (mode: ResidualVisualizationMode) => void
   onSeekTime: (time: number) => void
   onToggleExpanded: () => void
+  onViewChange: (view: AnalysisView) => void
   onWindowChange: (windowSize: SmoothingWindowSize) => void
 }
 
@@ -36,6 +41,12 @@ const MODES: Array<{ key: VisualizationMode; label: string }> = [
   { key: 'position', label: 'Position' },
   { key: 'velocity', label: 'Velocity' },
   { key: 'acceleration', label: 'Acceleration' },
+]
+
+const RESIDUAL_MODES: Array<{ key: ResidualVisualizationMode; label: string }> = [
+  { key: 'residual-magnitude', label: 'Magnitude' },
+  { key: 'residual-x', label: 'Residual X' },
+  { key: 'residual-y', label: 'Residual Y' },
 ]
 
 const MODELS: Array<{ key: MotionModelType; label: string }> = [
@@ -48,33 +59,28 @@ const WINDOWS: SmoothingWindowSize[] = [5, 7, 9]
 
 export function AnalysisPanel({
   track,
-  rawAnalysis,
   analysis,
+  analysisSpace,
   analysisError,
   analysisSource,
+  group,
   model,
-  modelFit,
+  modelFitError,
   activeSampleId,
   currentTime,
   expanded,
+  view,
   mode,
+  residualMode,
   onAnalysisSourceChange,
   onModelChange,
   onModeChange,
+  onResidualModeChange,
   onSeekTime,
   onToggleExpanded,
+  onViewChange,
   onWindowChange,
 }: AnalysisPanelProps) {
-  const group = useMemo(
-    () => analysis === null
-      ? null
-      : selectVisualizationGroup(analysis, mode, {
-          analysisSource: analysisSource.type,
-          rawAnalysis,
-          modelFit,
-        }),
-    [analysis, analysisSource.type, mode, modelFit, rawAnalysis],
-  )
   const panelBodyId = 'motion-analysis-panel-body'
 
   return (
@@ -88,14 +94,14 @@ export function AnalysisPanel({
           <strong>{track?.name ?? 'No active track'}</strong>
           {analysis !== null && (
             <small>
-              {analysis.samples.length} valid samples · {group?.unit}
+              {analysis.samples.length} valid samples · {group?.unit ?? analysis.positionUnit}
             </small>
           )}
         </div>
         <span
-          className={analysis?.space === 'world' ? 'analysis-space analysis-space--world' : 'analysis-space'}
+          className={analysisSpace === 'world' ? 'analysis-space analysis-space--world' : 'analysis-space'}
         >
-          {analysis?.space ?? rawAnalysis?.space ?? 'idle'}
+          {analysisSpace ?? 'idle'}
         </span>
         <button
           aria-controls={panelBodyId}
@@ -124,19 +130,48 @@ export function AnalysisPanel({
           ) : (
             <>
               <div className="analysis-controls">
-                <div className="kinematics-series-tabs" aria-label="Visualization quantity">
-                  {MODES.map((option) => (
+                <div className="analysis-view-tabs" aria-label="Analysis view" role="group">
+                  {(['motion', 'residuals'] as const).map((option) => (
                     <button
-                      aria-pressed={mode === option.key}
-                      className={mode === option.key ? 'kinematics-series-tab kinematics-series-tab--active' : 'kinematics-series-tab'}
-                      key={option.key}
-                      onClick={() => onModeChange(option.key)}
+                      aria-pressed={view === option}
+                      className={view === option ? 'analysis-view-tab analysis-view-tab--active' : 'analysis-view-tab'}
+                      key={option}
+                      onClick={() => onViewChange(option)}
                       type="button"
                     >
-                      {option.label}
+                      {option === 'motion' ? 'Motion' : 'Residuals'}
                     </button>
                   ))}
                 </div>
+                {view === 'motion' ? (
+                  <div className="kinematics-series-tabs" aria-label="Visualization quantity">
+                    {MODES.map((option) => (
+                      <button
+                        aria-pressed={mode === option.key}
+                        className={mode === option.key ? 'kinematics-series-tab kinematics-series-tab--active' : 'kinematics-series-tab'}
+                        key={option.key}
+                        onClick={() => onModeChange(option.key)}
+                        type="button"
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="kinematics-series-tabs" aria-label="Residual quantity">
+                    {RESIDUAL_MODES.map((option) => (
+                      <button
+                        aria-pressed={residualMode === option.key}
+                        className={residualMode === option.key ? 'kinematics-series-tab kinematics-series-tab--active' : 'kinematics-series-tab'}
+                        key={option.key}
+                        onClick={() => onResidualModeChange(option.key)}
+                        type="button"
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div className="analysis-controls__row">
                   <div className="analysis-control-group" aria-label="Analysis data source" role="group">
                     <span>Data</span>
@@ -201,6 +236,22 @@ export function AnalysisPanel({
                     <strong>Smoothed analysis unavailable</strong>
                     <span>{analysisError}</span>
                     <small>Switch to Raw to inspect the confirmed observations.</small>
+                  </div>
+                </div>
+              ) : view === 'residuals' && model === 'none' ? (
+                <div className="kinematics-graph">
+                  <div className="kinematics-graph__empty" role="status">
+                    <strong>Select a motion model</strong>
+                    <span>Choose constant velocity or constant acceleration to inspect fit residuals.</span>
+                    <small>Residuals compare the selected fit source with its model prediction.</small>
+                  </div>
+                </div>
+              ) : view === 'residuals' && group === null ? (
+                <div className="kinematics-graph">
+                  <div className="kinematics-graph__empty" role="status">
+                    <strong>Fit diagnostics unavailable</strong>
+                    <span>{modelFitError ?? 'The selected model could not be evaluated safely.'}</span>
+                    <small>Raw tracking and motion analysis remain available.</small>
                   </div>
                 </div>
               ) : group !== null ? (

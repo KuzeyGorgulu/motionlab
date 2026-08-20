@@ -4,7 +4,12 @@ import { createCalibration } from '../calibration/model'
 import { createTrack, createTrackSample } from '../tracking/model'
 import { createFrameReference } from '../video/frameReference'
 import { deriveTrackKinematics } from './kinematics'
-import { selectVisualizationGroup } from './series'
+import { deriveFitDiagnostics } from './fitDiagnostics'
+import { fitMotionModel } from './modelFit'
+import {
+  selectResidualVisualizationGroup,
+  selectVisualizationGroup,
+} from './series'
 
 const track = {
   ...createTrack('track-1', 'Ball', '#4ecdc4')!,
@@ -88,5 +93,31 @@ describe('analysis visualization groups', () => {
     expect(selectVisualizationGroup(calibrated, 'position').unit).toBe('cm')
     expect(selectVisualizationGroup(calibrated, 'velocity').unit).toBe('cm/s')
     expect(selectVisualizationGroup(calibrated, 'acceleration').unit).toBe('cm/s²')
+  })
+
+  it('builds interactive residual X, Y, and magnitude groups at observation times', () => {
+    const fit = fitMotionModel(analysis, 'constant-velocity', 'raw')
+    expect(fit.ok).toBe(true)
+    if (!fit.ok) return
+    const diagnostics = deriveFitDiagnostics(analysis, fit.fit)
+    expect(diagnostics).not.toBeNull()
+    if (diagnostics === null) return
+
+    for (const mode of ['residual-x', 'residual-y', 'residual-magnitude'] as const) {
+      const group = selectResidualVisualizationGroup(diagnostics, mode)
+      expect(group).toMatchObject({
+        kind: 'residuals',
+        mode,
+        axisLabel: 'Fit residual',
+        unit: 'px',
+        analysisSource: 'raw',
+        modelType: 'constant-velocity',
+      })
+      expect(group.series).toHaveLength(1)
+      expect(group.series[0]?.points.map((point) => [point.sampleId, point.time]))
+        .toEqual(analysis.samples.map((sample) => [sample.source.id, sample.source.time]))
+      expect(group.measuredSeries).toEqual([])
+      expect(group.modelSeries).toEqual([])
+    }
   })
 })

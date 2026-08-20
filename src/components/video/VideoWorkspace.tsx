@@ -8,12 +8,16 @@ import {
 } from 'react'
 
 import { deriveTrackKinematics } from '../../analysis/kinematics'
+import { deriveFitDiagnostics } from '../../analysis/fitDiagnostics'
 import { fitMotionModel } from '../../analysis/modelFit'
 import {
   INITIAL_ANALYSIS_PANEL_STATE,
   reduceAnalysisPanelState,
 } from '../../analysis/panelState'
-import { selectVisualizationGroup } from '../../analysis/series'
+import {
+  selectResidualVisualizationGroup,
+  selectVisualizationGroup,
+} from '../../analysis/series'
 import { deriveSmoothedTrackKinematics } from '../../analysis/smoothing'
 import type { MotionModelFitResult } from '../../analysis/types'
 import type { AnnotationTool } from '../../annotations/types'
@@ -132,7 +136,9 @@ export function VideoWorkspace({
       ? INITIAL_ANALYSIS_PANEL_STATE
       : {
           expanded: restoredProject.workspace.analysisExpanded,
+          view: 'motion',
           mode: restoredProject.workspace.analysisMode,
+          residualMode: 'residual-magnitude',
           source: { type: 'raw' },
           model: 'none',
         },
@@ -183,17 +189,33 @@ export function VideoWorkspace({
       analysisPanel.source.type,
     )
   }, [analysisError, analysisPanel.model, analysisPanel.source.type, trackAnalysis])
-  const visualizationGroup = useMemo(
-    () => trackAnalysis === null
+  const fitDiagnostics = useMemo(
+    () => trackAnalysis === null || modelFitResult === null || !modelFitResult.ok
       ? null
-      : selectVisualizationGroup(trackAnalysis, analysisPanel.mode, {
-          analysisSource: analysisPanel.source.type,
-          rawAnalysis: rawTrackAnalysis,
-          modelFit: modelFitResult?.ok ? modelFitResult.fit : null,
-        }),
+      : deriveFitDiagnostics(trackAnalysis, modelFitResult.fit),
+    [modelFitResult, trackAnalysis],
+  )
+  const visualizationGroup = useMemo(
+    () => analysisPanel.view === 'residuals'
+      ? fitDiagnostics === null
+        ? null
+        : selectResidualVisualizationGroup(
+            fitDiagnostics,
+            analysisPanel.residualMode,
+          )
+      : trackAnalysis === null
+        ? null
+        : selectVisualizationGroup(trackAnalysis, analysisPanel.mode, {
+            analysisSource: analysisPanel.source.type,
+            rawAnalysis: rawTrackAnalysis,
+            modelFit: modelFitResult?.ok ? modelFitResult.fit : null,
+          }),
     [
       analysisPanel.mode,
+      analysisPanel.residualMode,
       analysisPanel.source.type,
+      analysisPanel.view,
+      fitDiagnostics,
       modelFitResult,
       rawTrackAnalysis,
       trackAnalysis,
@@ -362,7 +384,9 @@ export function VideoWorkspace({
         result.svg,
         exportFilenameForVideo(
           source.name,
-          `${tracking.activeTrack.name}-${analysisPanel.mode}`,
+          `${tracking.activeTrack.name}-${analysisPanel.view === 'residuals'
+            ? analysisPanel.residualMode
+            : analysisPanel.mode}`,
           'svg',
         ),
         'image/svg+xml;charset=utf-8',
@@ -373,6 +397,8 @@ export function VideoWorkspace({
     }
   }, [
     analysisPanel.mode,
+    analysisPanel.residualMode,
+    analysisPanel.view,
     reportOperationError,
     source.name,
     tracking.activeTrack,
@@ -664,7 +690,7 @@ export function VideoWorkspace({
             </span>
           )}
           <WorkspaceFileActions
-            canExportGraph={tracking.activeTrack !== null && tracking.activeTrack.samples.length > 0}
+            canExportGraph={tracking.activeTrack !== null && visualizationGroup !== null}
             canSave={controller.metadata !== null}
             onExportCsv={handleExportCsv}
             onExportGraph={handleExportGraph}
@@ -786,11 +812,13 @@ export function VideoWorkspace({
           activeSampleId={tracking.currentSample?.id ?? null}
           analysis={trackAnalysis}
           analysisError={analysisError}
+          analysisSpace={trackAnalysis?.space ?? rawTrackAnalysis?.space ?? null}
           analysisSource={analysisPanel.source}
           currentTime={controller.currentTime}
           expanded={analysisPanel.expanded}
+          group={visualizationGroup}
           model={analysisPanel.model}
-          modelFit={modelFitResult?.ok ? modelFitResult.fit : null}
+          modelFitError={modelFitResult !== null && !modelFitResult.ok ? modelFitResult.message : null}
           mode={analysisPanel.mode}
           onAnalysisSourceChange={(source) => {
             dispatchAnalysisPanel({ type: 'select-source', source })
@@ -801,15 +829,22 @@ export function VideoWorkspace({
           onModeChange={(mode) => {
             dispatchAnalysisPanel({ type: 'select-mode', mode })
           }}
+          onResidualModeChange={(mode) => {
+            dispatchAnalysisPanel({ type: 'select-residual-mode', mode })
+          }}
           onSeekTime={handleSeekSample}
           onToggleExpanded={() => {
             dispatchAnalysisPanel({ type: 'toggle-expanded' })
           }}
+          onViewChange={(view) => {
+            dispatchAnalysisPanel({ type: 'select-view', view })
+          }}
           onWindowChange={(windowSize) => {
             dispatchAnalysisPanel({ type: 'select-window', windowSize })
           }}
-          rawAnalysis={rawTrackAnalysis}
+          residualMode={analysisPanel.residualMode}
           track={tracking.activeTrack}
+          view={analysisPanel.view}
         />
         <VideoInspector metadata={controller.metadata} source={source}>
           <GettingStartedPanel
@@ -887,8 +922,10 @@ export function VideoWorkspace({
             analysis={trackAnalysis}
             analysisSource={analysisPanel.source}
             currentSample={tracking.currentSample}
+            diagnostics={fitDiagnostics}
             model={analysisPanel.model}
             modelFitResult={modelFitResult}
+            onSeekSample={handleSeekSample}
             track={tracking.activeTrack}
           />
           <AnnotationInspector

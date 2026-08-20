@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import { deriveTrackKinematics } from '../analysis/kinematics'
+import { deriveFitDiagnostics } from '../analysis/fitDiagnostics'
 import { fitMotionModel } from '../analysis/modelFit'
-import { selectVisualizationGroup } from '../analysis/series'
+import {
+  selectResidualVisualizationGroup,
+  selectVisualizationGroup,
+} from '../analysis/series'
 import { deriveSmoothedTrackKinematics } from '../analysis/smoothing'
 import type { Track } from '../tracking/types'
 import { createFrameReference } from '../video/frameReference'
@@ -97,5 +101,47 @@ describe('graph SVG export', () => {
     expect(result.svg).toContain('Model fit')
     expect(result.svg).toContain('stroke-dasharray="8 6"')
     expect(result.svg).not.toMatch(/playhead|cursor|interaction-area|point-hit/)
+  })
+
+  it('exports residual markers, units, outlier indication, and signed zero baseline', () => {
+    const noise = [-1, 0.5, -0.7, 1.1, -0.3, 0.8, 35, -0.6, 0.4, -1.2, 0.2]
+    const track: Track = {
+      ...trackWithSamples(),
+      name: 'Diagnostic ball',
+      samples: noise.map((offset, index) => ({
+        id: `residual-${index}`,
+        time: index * 0.1,
+        frame: createFrameReference(index * 0.1),
+        nativePosition: { x: 20 + 5 * index, y: 80 + offset },
+      })),
+    }
+    const analysis = deriveTrackKinematics(track, null)
+    const fit = fitMotionModel(analysis, 'constant-velocity', 'raw')
+    expect(fit.ok).toBe(true)
+    if (!fit.ok) return
+    const diagnostics = deriveFitDiagnostics(analysis, fit.fit)
+    expect(diagnostics).not.toBeNull()
+    if (diagnostics === null) return
+
+    const magnitude = createGraphSvg(
+      selectResidualVisualizationGroup(diagnostics, 'residual-magnitude'),
+      track.name,
+      track.color,
+    )
+    expect(magnitude.ok).toBe(true)
+    if (!magnitude.ok) return
+    expect(magnitude.svg).toContain('Diagnostic ball — Residual magnitude')
+    expect(magnitude.svg).toContain('Fit residual (px)')
+    expect(magnitude.svg).toContain('Potential outlier')
+    expect(magnitude.svg).toContain('stroke-dasharray="3 3"')
+    expect(magnitude.svg).not.toMatch(/playhead|cursor|interaction-area|point-hit/)
+
+    const signed = createGraphSvg(
+      selectResidualVisualizationGroup(diagnostics, 'residual-y'),
+      track.name,
+      track.color,
+    )
+    expect(signed.ok).toBe(true)
+    if (signed.ok) expect(signed.svg).toContain('data-role="zero-baseline"')
   })
 })

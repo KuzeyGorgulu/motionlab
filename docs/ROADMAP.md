@@ -250,3 +250,20 @@ Acceptance criteria:
 - Guidance and disclosure state remain presentation-only and never enter the version-1 `.motionlab` schema, domain histories, scientific data, or exports.
 - Pure selector tests cover empty, calibrated, tracked, partially marked, ready, and selected-track states; Playwright covers manual progression, keyboard disclosures/state neutrality, and graph/numerical outcomes.
 - Responsive layout, focus visibility, native keyboard operation, local-file privacy, project/export behavior, assisted-tracking algorithms, and dependency footprint remain intact.
+
+### Phase 11 — Fit diagnostics and residual analysis (complete)
+
+Turn Phase 9 model fits into inspectable evidence by deriving residual metrics, actionable deviation rankings, and synchronized residual graphs without changing measurements or fit semantics.
+
+Acceptance criteria:
+
+- Pure diagnostics evaluate the selected constant-velocity or constant-acceleration model at every genuine Raw or Smoothed observation and define each residual as observed minus predicted position in the active pixel/world coordinate space.
+- Spatial RMSE reuses the model fit value; spatial MAE, maximum magnitude, mean signed X/Y residuals, observed/predicted coordinates, and deterministic largest-deviation rankings remain finite and observation-aligned.
+- Potential-outlier styling uses a documented conservative rule only for at least seven values: magnitude strictly greater than `median + 4 × 1.4826 × MAD`; degenerate or tiny data sets produce no flags.
+- Outlier flags are visual review aids only. They never remove, reweight, edit, smooth, interpolate, or otherwise alter observations or model fitting, and the UI warns that model mismatch can also produce large residuals.
+- The numerical inspector exposes fit summaries and seekable largest deviations; selecting one seeks its exact stored anchor and exposes observed, predicted, and residual details for correction with normal Tracking Edit/Delete behavior.
+- The Analysis dock switches between Motion and Residuals, with magnitude, signed X, and signed Y marker views that preserve exact observation seeking and do not invent connecting trajectories.
+- Current residual SVG export includes correct title, unit, legend, signed zero reference, and outlier styling while excluding playhead, pointer cursor, and hit-target chrome.
+- Track edits, deletes, undo/redo, calibration, active-track, source, and model changes recompute diagnostics; view/selection state remains outside tracking and project history.
+- Version-1 projects, CSV/JSON semantics, Assisted Tracking, core kinematics/model formulas, local-only privacy, dependency footprint, and active workspace geometry remain unchanged.
+- Pure, integration, SVG, and Playwright coverage verifies exact/irregular/calibrated fits, residual signs and metrics, outlier boundaries, immutability, reactive correction, exact seeking, and clean export.

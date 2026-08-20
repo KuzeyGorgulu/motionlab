@@ -76,6 +76,38 @@ const PHASE9_PROJECT = {
   },
 }
 
+const PHASE11_TIMES = [0, 0.04, 0.08, 0.12, 0.16, 0.2, 0.24, 0.28, 0.32]
+const PHASE11_Y_OFFSETS = [-1, 0.5, -0.7, 1.1, 35, 0.8, -0.6, 0.4, -1.2]
+const PHASE11_PROJECT = {
+  ...PROJECT,
+  tracks: [
+    {
+      ...PROJECT.tracks[0],
+      name: 'Diagnostic Ball',
+      samples: PHASE11_TIMES.map((time, index) => ({
+        id: `phase-11-sample-${index}`,
+        time,
+        frame: {
+          scheme: 'timestamp-bucket-v1',
+          bucketIndex: Math.round(time / (1 / 30)),
+          bucketDuration: 1 / 30,
+          anchorTime: time,
+        },
+        nativePosition: {
+          x: 40 + 400 * time,
+          y: 90 + PHASE11_Y_OFFSETS[index]!,
+        },
+      })),
+    },
+  ],
+  workspace: {
+    ...PROJECT.workspace,
+    analysisMode: 'position',
+    analysisExpanded: true,
+    mediaTime: 0,
+  },
+}
+
 async function syntheticVideo(page: Page) {
   const bytes = await page.evaluate(async () => {
     const canvas = document.createElement('canvas')
@@ -410,4 +442,88 @@ test('guided analysis exposes synchronized graphs and numerical outcomes', async
     .toBeVisible()
   await expect(page.getByRole('heading', { name: 'Numerical inspector' })).toBeVisible()
   await expect(page.locator('.kinematics-track-title')).toContainText('3 valid samples')
+})
+
+test('fit diagnostics rank an intentionally displaced observation', async ({ page }) => {
+  await openProject(page, PHASE11_PROJECT)
+  await relinkProjectVideo(page)
+  const analysis = page.getByRole('region', { name: 'Motion analysis' })
+  await analysis.getByRole('button', { name: 'Constant velocity', exact: true }).click()
+
+  const fitSummary = page.getByTestId('model-fit-summary')
+  await expect(fitSummary.getByText('Fit diagnostics', { exact: true })).toBeVisible()
+  await expect(fitSummary.getByText('Largest deviations', { exact: true })).toBeVisible()
+  await expect(fitSummary.getByRole('button', {
+    name: /00:00\.160, fit residual .* potential outlier/i,
+  })).toBeVisible()
+  await expect(fitSummary.getByText('Source: Raw observations', { exact: true })).toBeVisible()
+})
+
+test('largest-deviation seeking supports correction through existing Track Edit', async ({ page }) => {
+  await openProject(page, PHASE11_PROJECT)
+  await relinkProjectVideo(page)
+  const analysis = page.getByRole('region', { name: 'Motion analysis' })
+  await analysis.getByRole('button', { name: 'Constant velocity', exact: true }).click()
+  const fitSummary = page.getByTestId('model-fit-summary')
+  const outlierRow = fitSummary.getByRole('button', {
+    name: /00:00\.160, fit residual .* potential outlier/i,
+  })
+  const before = Number.parseFloat(
+    (await fitSummary.getByTestId('fit-max-residual').locator('dd').textContent()) ?? '',
+  )
+  expect(Number.isFinite(before)).toBe(true)
+
+  await outlierRow.click()
+  await expect(page.getByLabel('Current timestamp')).toHaveText('00:00.160')
+  await expect(page.getByTestId('selected-fit-observation')).toContainText('00:00.160')
+  const editButton = page.getByRole('button', { name: 'Edit current', exact: true })
+  await expect(editButton).toBeEnabled()
+  await editButton.click()
+
+  const canvas = page.getByRole('application', {
+    name: /Video measurement canvas\. Active tool: tracking-edit/,
+  })
+  const bounds = await canvas.boundingBox()
+  expect(bounds).not.toBeNull()
+  if (bounds === null) return
+  const nativeX = 40 + 400 * 0.16
+  await page.mouse.move(
+    bounds.x + (nativeX / 320) * bounds.width,
+    bounds.y + ((90 + PHASE11_Y_OFFSETS[4]!) / 180) * bounds.height,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    bounds.x + (nativeX / 320) * bounds.width,
+    bounds.y + (90 / 180) * bounds.height,
+    { steps: 4 },
+  )
+  await page.mouse.up()
+
+  await expect.poll(async () => Number.parseFloat(
+    (await fitSummary.getByTestId('fit-max-residual').locator('dd').textContent()) ?? '',
+  )).toBeLessThan(before)
+})
+
+test('residual visualization exports diagnostic SVG without interactive chrome', async ({ page }) => {
+  await openProject(page, PHASE11_PROJECT)
+  await relinkProjectVideo(page)
+  const analysis = page.getByRole('region', { name: 'Motion analysis' })
+  await analysis.getByRole('button', { name: 'Constant velocity', exact: true }).click()
+  await analysis.getByRole('button', { name: 'Residuals', exact: true }).click()
+  await expect(analysis.getByRole('group', {
+    name: /Residual magnitude against media time in px/,
+  })).toBeVisible()
+
+  await page.getByText('Export', { exact: true }).click()
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Current graph (SVG)' }).click()
+  const download = await downloadPromise
+  expect(download.suggestedFilename()).toMatch(/residual-magnitude\.svg$/)
+  const savedPath = await download.path()
+  expect(savedPath).not.toBeNull()
+  const svg = await readFile(savedPath!, 'utf8')
+  expect(svg).toContain('Diagnostic Ball — Residual magnitude')
+  expect(svg).toContain('Fit residual (px)')
+  expect(svg).toContain('Potential outlier')
+  expect(svg).not.toMatch(/playhead|cursor|interaction-area|point-hit/)
 })

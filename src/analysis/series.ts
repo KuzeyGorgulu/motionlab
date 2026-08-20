@@ -3,12 +3,14 @@ import type {
   AnalysisTimePoint,
   GraphDataPoint,
   MotionModelFit,
+  ResidualVisualizationMode,
   TrackKinematics,
   VisualizationGroup,
   VisualizationMode,
   VisualizationSeries,
 } from './types'
 import { evaluateMotionModel } from './modelFit'
+import type { FitDiagnostics } from './fitDiagnostics'
 
 const MODEL_DISPLAY_POINT_COUNT = 65
 
@@ -51,7 +53,7 @@ export function selectVisualizationGroup(
   let series: VisualizationSeries[]
 
   const complete = (
-    partial: Omit<VisualizationGroup, 'measuredSeries' | 'modelSeries' | 'analysisSource' | 'modelType'>,
+    partial: Omit<VisualizationGroup, 'kind' | 'measuredSeries' | 'modelSeries' | 'analysisSource' | 'modelType'>,
   ): VisualizationGroup => {
     const analysisSource = options.analysisSource ?? 'raw'
     const measuredSeries =
@@ -63,6 +65,7 @@ export function selectVisualizationGroup(
       : modelVisualizationSeries(options.modelFit, mode)
     return {
       ...partial,
+      kind: 'motion',
       measuredSeries,
       modelSeries,
       analysisSource,
@@ -168,6 +171,49 @@ export function selectVisualizationGroup(
         timeline,
         series,
       })
+  }
+}
+
+export function selectResidualVisualizationGroup(
+  diagnostics: FitDiagnostics,
+  mode: ResidualVisualizationMode,
+): VisualizationGroup {
+  const definition = mode === 'residual-x'
+    ? { label: 'Residual X', seriesLabel: 'Residual X', marker: 'circle' as const }
+    : mode === 'residual-y'
+      ? { label: 'Residual Y', seriesLabel: 'Residual Y', marker: 'square' as const }
+      : { label: 'Residual magnitude', seriesLabel: 'Residual |r|', marker: 'diamond' as const }
+  const valueFor = mode === 'residual-x'
+    ? (observation: FitDiagnostics['observations'][number]) => observation.residualX
+    : mode === 'residual-y'
+      ? (observation: FitDiagnostics['observations'][number]) => observation.residualY
+      : (observation: FitDiagnostics['observations'][number]) => observation.residualMagnitude
+
+  return {
+    kind: 'residuals',
+    mode,
+    label: definition.label,
+    axisLabel: 'Fit residual',
+    unit: diagnostics.positionUnit,
+    timeline: diagnostics.observations.map((observation) => ({
+      sampleId: observation.sampleId,
+      time: observation.time,
+    })),
+    series: [{
+      key: mode,
+      label: definition.seriesLabel,
+      marker: definition.marker,
+      points: diagnostics.observations.map((observation) => ({
+        sampleId: observation.sampleId,
+        time: observation.time,
+        value: valueFor(observation),
+        potentialOutlier: observation.potentialOutlier,
+      })),
+    }],
+    measuredSeries: [],
+    modelSeries: [],
+    analysisSource: diagnostics.source,
+    modelType: diagnostics.modelType,
   }
 }
 

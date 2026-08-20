@@ -103,6 +103,12 @@ export type MotionModelFitResult =
   | { ok: false; message: string }
 
 export type VisualizationMode = 'position' | 'velocity' | 'acceleration'
+export type AnalysisView = 'motion' | 'residuals'
+export type ResidualVisualizationMode =
+  | 'residual-magnitude'
+  | 'residual-x'
+  | 'residual-y'
+export type VisualizationGroupMode = VisualizationMode | ResidualVisualizationMode
 
 export type VisualizationSeriesKey =
   | 'position-x'
@@ -113,6 +119,9 @@ export type VisualizationSeriesKey =
   | 'acceleration-x'
   | 'acceleration-y'
   | 'acceleration'
+  | 'residual-x'
+  | 'residual-y'
+  | 'residual-magnitude'
 
 export type MarkerShape = 'circle' | 'square' | 'diamond'
 
@@ -120,6 +129,7 @@ export interface GraphDataPoint {
   sampleId: string
   time: number
   value: number
+  potentialOutlier?: boolean
 }
 
 export interface AnalysisTimePoint {
@@ -135,7 +145,8 @@ export interface VisualizationSeries {
 }
 
 export interface VisualizationGroup {
-  mode: VisualizationMode
+  kind: AnalysisView
+  mode: VisualizationGroupMode
   label: string
   axisLabel: string
   unit: PositionUnit | VelocityUnit | AccelerationUnit

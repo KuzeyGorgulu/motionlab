@@ -49,6 +49,7 @@ function Marker({
   size,
   fill,
   active,
+  potentialOutlier,
   secondary = false,
 }: {
   point: ChartPoint
@@ -56,6 +57,7 @@ function Marker({
   size: number
   fill: string
   active: boolean
+  potentialOutlier: boolean
   secondary?: boolean
 }) {
   return (
@@ -101,6 +103,14 @@ function Marker({
           cx={point.x}
           cy={point.y}
           r={size + 4}
+        />
+      )}
+      {potentialOutlier && (
+        <circle
+          className="kinematics-graph__diagnostic-ring"
+          cx={point.x}
+          cy={point.y}
+          r={size + 7}
         />
       )}
     </>
@@ -215,7 +225,9 @@ export function KinematicsGraph({
     <div className="kinematics-graph">
       <div className="kinematics-graph__plot" ref={plotRef}>
         <svg
-          aria-label={`${group.label} components against media time in ${group.unit}. ${group.series.map((series) => series.label).join(', ')}. ${group.analysisSource === 'smoothed' ? 'Measured observations and smoothed analysis shown.' : 'Measured observations shown.'}${group.modelType === 'none' ? '' : ' Analytic model fit shown.'}`}
+          aria-label={group.kind === 'residuals'
+            ? `${group.label} against media time in ${group.unit}. Fit residuals for ${group.analysisSource === 'raw' ? 'raw observations' : 'smoothed analysis'}.`
+            : `${group.label} components against media time in ${group.unit}. ${group.series.map((series) => series.label).join(', ')}. ${group.analysisSource === 'smoothed' ? 'Measured observations and smoothed analysis shown.' : 'Measured observations shown.'}${group.modelType === 'none' ? '' : ' Analytic model fit shown.'}`}
           onClick={(event) => {
             const time = timeAtPointer(event)
             if (time !== null) onSeekTime(time)
@@ -363,6 +375,7 @@ export function KinematicsGraph({
                     active={active}
                     fill={seriesColor}
                     point={point}
+                    potentialOutlier={point.potentialOutlier === true}
                     secondary
                     shape={series.marker}
                     size={active ? markerSize + 1 : markerSize}
@@ -379,7 +392,7 @@ export function KinematicsGraph({
             const seriesColor = colorForSeries(seriesIndex, color)
             return (
               <g key={`analysis-${series.key}`}>
-                {group.analysisSource === 'smoothed' && (seriesLayout?.points.length ?? 0) > 1 && (
+                {group.kind === 'motion' && group.analysisSource === 'smoothed' && (seriesLayout?.points.length ?? 0) > 1 && (
                   <polyline
                     className="kinematics-graph__smoothed-line"
                     fill="none"
@@ -392,8 +405,8 @@ export function KinematicsGraph({
                   const activate = () => onSeekTime(point.time)
                   return (
                     <g
-                      aria-label={`${group.analysisSource === 'smoothed' ? 'Smoothed ' : ''}${series.label} ${formatAnalysisNumber(point.value)} ${group.unit} at ${formatTimestamp(point.time)}. Seek video.`}
-                      className={active ? 'kinematics-graph__point kinematics-graph__point--active' : 'kinematics-graph__point'}
+                      aria-label={`${group.kind === 'residuals' ? 'Fit ' : group.analysisSource === 'smoothed' ? 'Smoothed ' : ''}${series.label} ${formatAnalysisNumber(point.value)} ${group.unit} at ${formatTimestamp(point.time)}.${point.potentialOutlier ? ' Potential outlier.' : ''} Seek video.`}
+                      className={`${active ? 'kinematics-graph__point kinematics-graph__point--active' : 'kinematics-graph__point'}${point.potentialOutlier ? ' kinematics-graph__point--potential-outlier' : ''}`}
                       key={`${series.key}-${point.sampleId}`}
                       onClick={(event) => {
                         event.stopPropagation()
@@ -413,11 +426,12 @@ export function KinematicsGraph({
                         active={active}
                         fill={seriesColor}
                         point={point}
+                        potentialOutlier={point.potentialOutlier === true}
                         shape={series.marker}
                         size={active ? markerSize + 1 : markerSize}
                       />
                       <title>
-                        {series.label} · {formatAnalysisNumber(point.value)} {group.unit} · {formatTimestamp(point.time)}
+                        {series.label} · {formatAnalysisNumber(point.value)} {group.unit} · {formatTimestamp(point.time)}{point.potentialOutlier ? ' · Potential outlier' : ''}
                       </title>
                     </g>
                   )
@@ -452,22 +466,29 @@ export function KinematicsGraph({
               {series.label}
             </span>
           ))}
-          {group.analysisSource === 'smoothed' && (
+          {group.kind === 'motion' && group.analysisSource === 'smoothed' && (
             <span className="kinematics-graph__layer-key">
               <i aria-hidden="true" className="kinematics-graph__layer-swatch kinematics-graph__layer-swatch--measured" />
               Measured
             </span>
           )}
-          {group.analysisSource === 'smoothed' && (
+          {group.kind === 'motion' && group.analysisSource === 'smoothed' && (
             <span className="kinematics-graph__layer-key">
               <i aria-hidden="true" className="kinematics-graph__layer-swatch kinematics-graph__layer-swatch--smoothed" />
               Smoothed
             </span>
           )}
-          {group.modelType !== 'none' && (
+          {group.kind === 'motion' && group.modelType !== 'none' && (
             <span className="kinematics-graph__layer-key">
               <i aria-hidden="true" className="kinematics-graph__layer-swatch kinematics-graph__layer-swatch--model" />
               Model fit
+            </span>
+          )}
+          {group.kind === 'residuals' && group.series.some((series) =>
+            series.points.some((point) => point.potentialOutlier === true)) && (
+            <span className="kinematics-graph__layer-key">
+              <i aria-hidden="true" className="kinematics-graph__layer-swatch kinematics-graph__layer-swatch--diagnostic" />
+              Potential outlier
             </span>
           )}
         </div>
@@ -480,9 +501,11 @@ export function KinematicsGraph({
           </span>
         </div>
         <span className="kinematics-graph__method-note">
-          {group.analysisSource === 'smoothed'
-            ? 'Smoothing evaluated at observations'
-            : 'Samples only · no interpolation'}
+          {group.kind === 'residuals'
+            ? `Fit residuals from ${group.analysisSource === 'raw' ? 'raw observations' : 'smoothed analysis'} · no interpolation`
+            : group.analysisSource === 'smoothed'
+              ? 'Smoothing evaluated at observations'
+              : 'Samples only · no interpolation'}
         </span>
       </div>
     </div>
