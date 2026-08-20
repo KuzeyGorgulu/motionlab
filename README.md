@@ -1,90 +1,157 @@
 # MotionLab
 
-MotionLab is a local-first browser workspace for extracting physical measurements from ordinary videos. It provides private local video import, analysis-oriented playback controls, editable frame-associated geometry, uniform planar calibration, manual multi-object trajectories, and non-destructive scientific analysis.
+MotionLab is a local-first scientific workspace for measuring motion in ordinary videos. Calibrate a scene, track an object, inspect timestamp-based kinematics, fit simple motion models, review residuals, and assemble a reproducible experiment report—all in the browser.
 
 **Live Demo:** https://motionlab-qzeybei.vercel.app/
 
-User videos are decoded in the browser from local Object URLs. They are not uploaded, copied to a backend, or sent to analytics.
+No account, backend, API key, telemetry, or video upload is required.
 
-## Run locally
+## Demo
 
-Requires Node.js 20.19 or newer.
+Seed a target once and let MotionLab follow it frame-by-frame using local template matching, motion guidance, and bounded recovery. Assisted Tracking is experimental: review its suggestions before accepting them.
+
+![MotionLab assisted tracking demo](docs/assets/assisted-tracking-demo.gif)
+
+| Tracking and calibrated analysis | Experiment report |
+| --- | --- |
+| ![MotionLab tracking workspace with calibrated sample data](docs/assets/v1-tracking-workspace.png) | ![MotionLab experiment report workspace](docs/assets/v1-experiment-report.png) |
+
+More real v1 screenshots: [position analysis](docs/assets/v1-analysis-graphs.png), [model-fit residuals](docs/assets/v1-fit-residuals.png), and [the import screen](docs/assets/v1-empty-import.png).
+
+## What MotionLab Does
+
+MotionLab turns frame-associated video observations into inspectable physical measurements. Stored track points retain their native-video coordinates and exact media timestamps; calibration and analysis are derived from those observations. The workflow stays transparent and editable rather than hiding measurements behind an opaque result.
+
+The bundled **Constant-Speed Motion** sample is available from **Try sample** on the import screen or **Help → Examples**. It loads through the same project parser, relinking, calibration, tracking, analysis, and report paths as a user experiment.
+
+## Features
+
+- Local video import, playback, timestamp seeking, speed control, and approximate frame stepping.
+- Frame-associated Point, Line, and Angle annotations with independent undo/redo.
+- Planar spatial calibration with scale, origin, axis direction, and physical units.
+- Editable multi-object manual tracking with timestamped native-pixel observations.
+- Experimental local assisted tracking with reviewable, transient suggestions and manual recovery.
+- Position, displacement, path distance, velocity, speed, and acceleration analysis.
+- Synchronized position, velocity, acceleration, and residual graphs with SVG export.
+- Non-destructive timestamp-aware smoothing over confirmed observations.
+- Constant-velocity and constant-acceleration least-squares model fitting.
+- Fit diagnostics, observation-aligned residuals, and conservative potential-deviation cues.
+- Versioned `.motionlab` project save/reopen with explicit local-video relinking.
+- Scientific CSV and JSON exports that preserve missing values and explicit units.
+- Configurable experiment reports with print/PDF workflow and standalone offline HTML export.
+- First-run onboarding, contextual empty states, keyboard help, examples, About, and Privacy guidance.
+
+## Typical Workflow
+
+`Import → Calibrate → Track → Analyze → Fit → Report`
+
+1. Import a local video, open a saved project, or try the bundled sample.
+2. Optionally calibrate a known scene length and coordinate direction. Without calibration, MotionLab analyzes in pixels.
+3. Create a track and mark one consistent physical point across video positions; Assisted Tracking may accelerate this step.
+4. Inspect motion graphs and numerical quantities, correcting confirmed points as needed.
+5. Optionally smooth the analysis and fit a suitable constant-velocity or constant-acceleration model.
+6. Review residuals and potential deviations as evidence, not automatic error classifications.
+7. Save the project, export scientific data/graphs, or assemble an experiment report.
+
+## Quick Start
+
+Use the [live demo](https://motionlab-qzeybei.vercel.app/) and choose **Try sample**, or run MotionLab locally with Node.js 20.19 or newer:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Then open the local URL printed by Vite and select or drop a video file. Pause on a useful frame and use Select, Point, Line, or Angle above the video.
+Open the URL printed by Vite. Selected videos remain local to that browser session.
 
-## Guided workflow
+## Keyboard Shortcuts
 
-The Phase 10 UX principle is **simple by default, detailed on demand**. The **Getting started** guide derives the next useful action from the current experiment without blocking normal controls or storing separate workflow state.
+Press `?` in MotionLab for the accessible shortcut dialog.
 
-1. Load a video.
-2. Optionally calibrate for real-world units.
-3. Create a track.
-4. Mark manually or use experimental Assisted Tracking.
-5. Analyze the motion.
-6. Save the project or export results.
+| Group | Shortcut | Action |
+| --- | --- | --- |
+| Playback | `Space` | Play or pause |
+| Playback | `Left` / `Right` | Step approximately one frame |
+| Tools | `V` | Select/edit annotations |
+| Tools | `P` / `L` / `A` | Point, Line, or Angle annotation |
+| Tools | `T` | Start or stop Track Mark |
+| Editing | `Delete` / `Backspace` | Delete the current track point or selected annotation |
+| Editing | `Escape` | Cancel the active interaction or stop assisted tracking |
+| Editing | `Ctrl/Cmd + Z` | Undo in the active editing domain |
+| Editing | `Ctrl/Cmd + Shift + Z` or `Ctrl/Cmd + Y` | Redo in the active editing domain |
 
-Calibration is optional; pixel-based tracking and analysis remain available without it. Core tasks stay visible, while Assisted Tracking, keyboard shortcuts, video metadata, and exact timing caveats are available on demand in compact disclosures.
+Shortcuts pause while focus is inside a button, field, menu, or link.
 
-To calibrate, choose **Create calibration** in the inspector, click two video points whose real separation is known, then enter the distance and unit. Reference A becomes the default world origin and A → B the default positive X direction; both can be changed independently. A rightward X axis produces upward positive Y. Lines then show physical lengths and Points show derived world coordinates.
+## Project Files
 
-To track an object, create and select a track in **Tracking**, enter **Mark point** mode (or press `T`), click the object, step with Left/Right, and repeat. Marking the same timestamp bucket again moves the existing sample instead of creating a duplicate. Enable **Advance after mark** for a click-and-step workflow. **Edit current** lets you drag the active track's sample, and sample rows seek to their exact stored anchor timestamps. Trail visibility can show past/current samples, all samples with future history muted, or only the current sample.
+**Project → Save project** downloads a validated version-1 `.motionlab` JSON file. It contains annotations, calibration, confirmed tracks/samples, selected workspace settings, and report metadata/preferences.
 
-**Assisted tracking (Experimental)** is a productivity aid for semi-automatic tracking, not guaranteed fully automatic object tracking. Select a track, pause on the target, choose **Seed target** (or use an existing current-frame sample), then start the forward-only run. Resolution-aware coarse search handles larger motion, full-resolution refinement preserves native-pixel observations, nearby refined hypotheses are grouped into one local match basin, and recent timestamped motion guides an adaptive predicted-first search. If that search is uncertain, one wider bounded corridor pass tolerates acceleration before normal multi-frame recovery begins. The physical point you clicked remains the measured anchor. Suggestions appear as a dashed trajectory with hollow markers and remain transient until **Accept suggestions** is chosen; **Discard** leaves confirmed track data unchanged apart from an explicitly created seed. An uncertain frame is left unmeasured while a short bounded recovery searches subsequent frames; successful reacquisition resumes normally without filling the gap. Persistent loss, invalid frames, confirmed-sample conflicts, or video end stop visibly instead of creating guessed points. Accepted suggestions become ordinary editable samples in one undoable batch.
+Project files never contain the source video, Object URLs, unaccepted Assisted Tracking suggestions, smoothing/model selections, derived report values, or undo history. When reopening a project, browser security requires selecting its original local video again. MotionLab compares filename, resolution, and duration where available and warns before accepting an apparent mismatch. Existing version-1 projects from earlier MotionLab phases remain compatible.
 
-The intended workflow is **seed target → generate suggestions → review suggestions → accept when correct → reseed manually if tracking is lost**. Known limitations of the lightweight local template matcher include fast or sudden motion, severe motion blur, occlusion, significant scale or rotation changes, visually repetitive or ambiguous targets, and motion beyond the bounded search limits.
+## Export Formats
 
-## Assisted Tracking Demo
+- **CSV:** one chronological multi-track table with identities, timestamps/frame references, native pixels, derived raw kinematics, explicit spaces/units, and blank unavailable derivatives.
+- **Scientific JSON:** human-readable confirmed observations, calibration/annotation context, and raw derived kinematics.
+- **SVG:** the current motion or residual graph with title, legend, axes, units, and displayed analysis/model layers; interaction chrome is omitted.
+- **Standalone HTML report:** report metadata, summaries, selected SVG graphs, optional observation tables, model diagnostics, and provenance in one offline file. The source video is excluded.
+- **Print / Save PDF:** the report workspace provides a clean print-only document through the browser’s print workflow.
 
-Seed a target once and let MotionLab follow it frame-by-frame using local template matching, motion guidance, and recovery.
+## Privacy
 
-![MotionLab assisted tracking demo](docs/assets/assisted-tracking-demo.gif)
+Selected videos are read through local browser Object URLs and processed in the browser. MotionLab application code does not upload source videos, derived frames, project data, or reports. `.motionlab` files and standalone reports exclude the original video, and MotionLab requires no account.
 
-## Save and reopen projects
+The application includes no telemetry or analytics. When using a hosted copy, the hosting provider may retain standard requests for page assets; those requests are separate from the local video and experiment data selected inside MotionLab.
 
-Use **Project → Save project** to download a versioned `.motionlab` file containing annotations, calibration, confirmed tracks and samples, report metadata/preferences, trail settings, active-track selection, analysis mode, and media time. Project files are JSON and remain under your control. They do **not** contain or upload the source video.
+## Scientific Limitations
 
-Use **Open project** from the import screen or workspace to restore an experiment. Browser security requires you to select the original local video again. MotionLab compares its filename, resolution, and duration when available and warns before accepting an apparent mismatch. Malformed or unsupported projects are rejected before the current workspace is changed.
+- A single planar calibration assumes the reference and measured motion occupy approximately the same plane. It does not remove perspective, parallax, lens distortion, or depth error.
+- Media timestamps are the timing source. Frame stepping uses an approximate 30 fps fallback and is not a guarantee of exact decoded-frame access.
+- Manual and assisted tracking can contain localization mistakes. Assisted Tracking is a bounded template matcher, not an infallible detector.
+- Numerical differentiation amplifies measurement noise; smoothing can suppress real rapid changes and does not create more accurate ground truth.
+- A close fit describes the selected data and model. It does not prove a physical law, and a large residual may reflect model mismatch rather than a bad observation.
 
-## Export scientific results
+## Tech Stack
 
-The compact **Export** menu provides combined chronological CSV, human-readable scientific JSON, and the current graph as standalone SVG. CSV always includes stable track/sample IDs, time and frame references, native `x_px`/`y_px`, analysis space, explicit position/velocity/acceleration units, position, velocity, speed, acceleration components, and acceleration magnitude. Unavailable derivative values remain empty instead of becoming zero. CSV and JSON deliberately remain based on confirmed observations and raw derived kinematics. SVG reflects the current graph, including optional smoothing and model-fit layers, but excludes the interactive playhead, cursor, and hit targets.
+- React 19 and strict TypeScript
+- Vite 7
+- Dependency-free SVG graphing and browser Canvas overlays
+- Web Worker-assisted local template matching
+- Vitest unit/integration tests
+- Playwright browser workflow tests
 
-## Scientific smoothing and motion models
+MotionLab has no runtime state, charting, numerical, analytics, or backend dependency beyond React.
 
-Raw observations remain the default analysis source. Select **Smoothed** to fit an independent timestamp-aware local quadratic to X and Y at each genuine observation time using the nearest 5, 7, or 9 measured samples. The derived position, velocity, acceleration, displacement, and path distance update with tracking edits and calibration, while every stored `TrackSample` remains unchanged and no gaps or synthetic observations are created. Raw measurements remain visible as secondary graph markers for comparison.
+## Development
 
-Optional constant-velocity and constant-acceleration least-squares models use the real, potentially irregular media timestamps in either raw or smoothed analysis space. Their parameters, RMSE, per-axis R² where defined, sample count, and time span appear in the numerical inspector; dashed graph curves are display-only and never become measurements or seek targets. Smoothing can clarify noisy trajectories, but it can also hide real rapid changes, so compare it with the raw observations and avoid treating a visually close fit as proof of a physical law.
+```bash
+npm install
+npm run dev
+npm run typecheck
+npm run build
+```
 
-## Fit diagnostics and residual analysis
+Release and media workflows are documented in [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md) and [docs/MEDIA_CAPTURE.md](docs/MEDIA_CAPTURE.md).
 
-When a motion model is selected, MotionLab derives a residual at each genuine observation as **observed position minus model-predicted position** in the selected Raw or Smoothed coordinate space. The inspector reports the existing spatial RMSE, spatial MAE (the mean residual-vector magnitude), maximum residual, mean X/Y residuals, and the largest deviations. Each listed deviation and residual marker seeks to that observation's exact stored timestamp, so the original confirmed point can be reviewed and corrected with the normal Tracking Edit or Delete controls.
-
-The Residuals graph can show X residual, Y residual, or residual magnitude and can be exported as the current standalone SVG. Potential outliers use a conservative magnitude rule only when at least seven observations are available: `median + 4 × 1.4826 × MAD`, with strictly greater values flagged. Flags are visual review aids only—they never remove, reweight, or alter measurements, and a large residual may indicate an unsuitable model rather than a bad track point.
-
-## Experiment reports
-
-Open **Report** from the loaded-video workspace to assemble a human-readable experiment report from the current Raw or Smoothed analysis. Optional project metadata, discussion notes, track inclusion, graph choices, and per-track observation-table choices are saved in the `.motionlab` project. Measurement summaries reuse existing kinematics; an active model adds its existing fit parameters and Phase 11 diagnostics without recomputing or changing observations.
-
-The report can be printed through the browser's **Print / Save PDF** workflow or exported as a standalone offline HTML file with embedded styles and selected SVG graphs. The source video is never embedded. Average velocity is net displacement divided by tracked duration, and average speed is existing cumulative path distance divided by tracked duration; unavailable quantities remain `—`. Potential deviations remain informational, and scientific interpretation belongs in the user-written Discussion / Notes field.
-
-Track samples store exact media anchor timestamps, fallback frame-bucket references, and native-video pixel positions only. Calibration-derived world positions update live without changing the stored trajectory. The live workspace remains session-scoped unless it is explicitly saved as a project.
-
-The full-height right-side **Numerical inspector** derives position, displacement, cumulative path distance, velocity, speed, and acceleration for the active track. Results use the calibration's physical unit when available and explicit `px`, `px/s`, and `px/s²` units otherwise. A collapsible Analysis panel fills the left workspace column below the video/timeline and compares Position (X/Y), Velocity (vx/vy/Speed), or Acceleration (ax/ay/|a|) samples on shared true-timestamp axes. A live video playhead and transient time-only graph cursor support synchronization and background timestamp seeking, while selecting an actual marker seeks to its exact media anchor.
-
-Escape cancels the active canvas interaction; Delete/Backspace removes the current track sample while a tracking mode is active, or the selected annotation otherwise. Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z apply to the active tracking domain while tracking and to annotations otherwise. Track history also has explicit controls in its panel.
-
-## Validate
+## Testing
 
 ```bash
 npm test
 npm run typecheck
 npm run build
 npm run test:e2e
+git diff --check
 ```
 
-See `docs/PRODUCT_SPEC.md`, `docs/ARCHITECTURE.md`, and `docs/ROADMAP.md` for current scope and planned phases. Assisted tracking remains experimental. Phase 9–11 scientific-view controls remain session-only; Phase 12 adds a backward-compatible report section to version-1 `.motionlab` projects without persisting derived report values.
+## Version
+
+MotionLab **v1.0.0** follows semantic versioning:
+
+- **PATCH** for fixes with no intended feature changes.
+- **MINOR** for backward-compatible features.
+- **MAJOR** for breaking product or project-format changes.
+
+See [CHANGELOG.md](CHANGELOG.md) and the prepared [v1.0.0 release notes](docs/releases/v1.0.0.md).
+
+## License
+
+MotionLab is released under the [MIT License](LICENSE). Copyright (c) 2026 Kuzey Görgülü.

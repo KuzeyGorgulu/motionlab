@@ -68,7 +68,7 @@ function input(
     analysisSource: { type: 'raw' },
     trackAnalyses,
     generatedAt: '2026-08-20T12:00:00.000Z',
-    motionLabVersion: '0.1.0',
+    motionLabVersion: '1.0.0',
   }
 }
 

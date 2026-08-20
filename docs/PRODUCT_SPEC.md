@@ -6,6 +6,8 @@ MotionLab is a desktop-first browser workspace that turns motion visible in an o
 
 The analysis workspace is the product. MotionLab should feel like a compact engineering instrument: dark, precise, information-dense, and understandable without decorative dashboard content.
 
+MotionLab v1.0.0 is the completed scope of Phases 1–13. Its scientific feature set is frozen for this release; product guidance, local-first privacy, examples, accessibility, error recovery, release media, and public documentation are part of the shipped product rather than future concepts.
+
 ## Current implemented scope
 
 MotionLab currently imports local videos, provides timestamp-oriented transport controls, and supports editable manual Point, Line, and Angle annotations. Geometry is stored in native video pixels and associated with a bounded timestamp bucket. A video-scoped planar calibration defines real distance, unit, origin, and axis orientation. Valid calibration derives physical line lengths and Point world coordinates while angles remain in degrees.
@@ -26,6 +28,8 @@ Experiments can be downloaded as validated version-1 `.motionlab` JSON projects 
 
 A compact **Getting started** guide now turns those capabilities into a visible task sequence. It derives a current action from loaded video, optional calibration, active track, and confirmed sample count; it does not own experiment state. The inspector prioritizes calibration, tracking, numerical outcomes, and annotations, while keyboard shortcuts, video metadata, exact timing caveats, and idle experimental assistance use progressive disclosure. Empty states explain both what is missing and the action that will make them useful.
 
+First-run onboarding explains the local workflow and project/video boundary once per browser preference, while the persistent Help interface reopens onboarding and provides accurate keyboard shortcuts, experiment ideas, Privacy, and About/version information. The bundled constant-speed sample combines a separate synthetic WebM with an ordinary validated version-1 project and enters the same parser/relink/workspace pipeline as user experiments. No onboarding or Help preference enters scientific project state.
+
 ## Intended users
 
 - Students performing mechanics experiments without specialist camera equipment.
@@ -42,26 +46,26 @@ A compact **Getting started** guide now turns those capabilities into a visible 
 - Prefer plain task language in the main workflow; keep codec, fallback timing, and other implementation detail available on demand.
 - Derive guidance from existing domain state so it cannot disagree with or mutate the experiment.
 
-## Planned workflow
+## Typical workflow
 
 1. Load a local video and inspect it with analysis-oriented playback controls.
 2. Optionally calibrate real-world scale and define the coordinate system; continue in pixels otherwise.
 3. Create a track for the object to measure.
 4. Mark object positions manually or use experimental assisted tracking as a conservative accelerator.
 5. Analyze synchronized graphs and numerical position, velocity, and acceleration results while correcting the track as needed.
-6. Save the experiment for later relinking or export raw and processed measurement data.
+6. Review a suitable fit and its residual evidence, assemble a report, then save or export the experiment.
 
 Frame-local Point, Line, and Angle annotations remain directly available alongside this standard motion workflow.
 
-## Final planned capabilities
+## v1.0 capabilities
 
 - Local video import, playback, timestamp seeking, approximate frame stepping, speed control, and video metadata.
 - Scale, origin, axis-orientation, and coordinate-rotation calibration.
 - Manual point tracking that always remains available and scientifically transparent.
 - Optional browser-side assisted tracking with manual correction.
 - Timestamp-based position, displacement, velocity, speed, and acceleration calculations.
-- Later experiment-specific analyses such as projectile fits, launch measurements, experimental gravity, pendulum period, polynomial fitting, and uncertainty handling.
-- Video trajectory overlays, selectable graph series, numerical summaries, CSV export, and reasonable graph-image export.
+- Video trajectory overlays, selectable graph series, numerical summaries, scientific CSV/JSON, graph SVG, and experiment-report export.
+- First-run onboarding, contextual guidance, accurate shortcut help, experiment examples, a bundled sample experience, About, and Privacy information.
 
 ## Non-goals
 
@@ -85,7 +89,7 @@ Current calibration uses one uniform scale for a two-dimensional scene plane. Su
 
 Manual track samples use media timestamps as the source of truth. The current `timestamp-bucket-v1` identity uses the approximate 30 fps step duration to associate nearby timestamps while retaining the exact timestamp that anchored each sample. This is not a decoded frame number or a guarantee of exact adjacent-frame access. Re-marking the active track in the same bucket updates the existing native position and preserves its stable sample identity and original anchor.
 
-Tracks are independent of frame-local Point annotations and scene calibration. Recalibration changes only derived world-coordinate displays; calibration reset returns tracks to native-pixel display. Track, annotation, and calibration data are session-only and scoped to the selected video.
+Tracks are independent of frame-local Point annotations and scene calibration. Recalibration changes only derived world-coordinate displays; calibration reset returns tracks to native-pixel display. Live track, annotation, and calibration data is scoped to the selected video and persists only when the user explicitly downloads a `.motionlab` project.
 
 ## Assisted tracking assumptions
 

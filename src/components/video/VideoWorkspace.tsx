@@ -1,4 +1,6 @@
 import {
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -43,6 +45,7 @@ import {
 } from '../../project/serialize'
 import type { MotionLabProjectV1 } from '../../project/types'
 import { compareRelinkedVideo } from '../../project/videoRelink'
+import { MOTIONLAB_VERSION } from '../../product/version'
 import { buildExperimentReport } from '../../report/builder'
 import {
   createDefaultReportProjectState,
@@ -60,7 +63,6 @@ import { ShortcutHelp } from '../guidance/ShortcutHelp'
 import { FilmIcon, TrashIcon } from '../Icons'
 import { VideoRelinkWarning } from '../project/VideoRelinkWarning'
 import { WorkspaceFileActions } from '../project/WorkspaceFileActions'
-import { ReportWorkspace } from '../report/ReportWorkspace'
 import { AssistedTrackingNotice } from '../tracking/AssistedTrackingNotice'
 import { TrackingPanel } from '../tracking/TrackingPanel'
 import { TransportControls } from './TransportControls'
@@ -82,7 +84,10 @@ interface VideoWorkspaceProps {
   onRemoveVideo: () => void
 }
 
-const MOTIONLAB_VERSION = '0.1.0'
+const ReportWorkspace = lazy(async () => {
+  const module = await import('../report/ReportWorkspace')
+  return { default: module.ReportWorkspace }
+})
 
 function isEditableOrInteractive(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
@@ -239,7 +244,7 @@ export function VideoWorkspace({
     ],
   )
   const reportTrackAnalyses = useMemo<ReportTrackAnalysisInput[]>(
-    () => tracking.tracks.map((track) => {
+    () => workspaceView === 'analysis' ? [] : tracking.tracks.map((track) => {
       const rawAnalysis = deriveTrackKinematics(track, calibration.calibration)
       const selectedAnalysis = analysisPanel.source.type === 'raw'
         ? rawAnalysis
@@ -275,6 +280,7 @@ export function VideoWorkspace({
       analysisPanel.source,
       calibration.calibration,
       tracking.tracks,
+      workspaceView,
     ],
   )
   const buildCurrentReport = useCallback(
@@ -302,8 +308,10 @@ export function VideoWorkspace({
     ],
   )
   const experimentReport = useMemo(
-    () => buildCurrentReport(reportGeneratedAt),
-    [buildCurrentReport, reportGeneratedAt],
+    () => workspaceView === 'report'
+      ? buildCurrentReport(reportGeneratedAt)
+      : null,
+    [buildCurrentReport, reportGeneratedAt, workspaceView],
   )
   const relinkComparison = useMemo(
     () => initialProject === null || controller.metadata === null
@@ -1077,16 +1085,23 @@ export function VideoWorkspace({
           <ShortcutHelp />
         </VideoInspector>
       </div>
-      ) : (
-        <ReportWorkspace
-          onBack={() => setWorkspaceView('analysis')}
-          onExportHtml={handleExportReport}
-          onReportStateChange={setReportState}
-          report={experimentReport}
-          reportState={reportState}
-          tracks={tracking.tracks}
-        />
-      )}
+      ) : experimentReport !== null ? (
+        <Suspense fallback={(
+          <div className="workspace-loading" role="status">
+            <span className="status-spinner" aria-hidden="true" />
+            Preparing report workspace…
+          </div>
+        )}>
+          <ReportWorkspace
+            onBack={() => setWorkspaceView('analysis')}
+            onExportHtml={handleExportReport}
+            onReportStateChange={setReportState}
+            report={experimentReport}
+            reportState={reportState}
+            tracks={tracking.tracks}
+          />
+        </Suspense>
+      ) : null}
       {showAssistedTrackingNotice && (
         <AssistedTrackingNotice
           onCancel={() => setShowAssistedTrackingNotice(false)}

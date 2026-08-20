@@ -9,6 +9,8 @@ interface EmptyWorkspaceProps {
   onOpenProject: (file: File) => void
   importError: string | null
   projectError: string | null
+  sampleLoading: boolean
+  onTrySample: () => void
 }
 
 export function EmptyWorkspace({
@@ -16,6 +18,8 @@ export function EmptyWorkspace({
   onOpenProject,
   importError,
   projectError,
+  sampleLoading,
+  onTrySample,
 }: EmptyWorkspaceProps) {
   const [isDragging, setIsDragging] = useState(false)
 
@@ -57,9 +61,20 @@ export function EmptyWorkspace({
             Inspect motion with timestamp-based playback and an analysis-ready overlay.
             Your file is decoded by this browser and never uploaded.
           </p>
+          <p className="mobile-recommendation">
+            MotionLab works best on a tablet, laptop, or desktop with room for the video and inspector.
+          </p>
           <div className="empty-workspace__actions">
             <VideoImportButton onSelect={onSelectVideo} />
             <ProjectOpenButton onOpen={onOpenProject} />
+            <button
+              className="button button--secondary"
+              disabled={sampleLoading}
+              onClick={onTrySample}
+              type="button"
+            >
+              {sampleLoading ? 'Loading sample…' : 'Try sample'}
+            </button>
             <span>or drop a video here</span>
           </div>
           {(importError !== null || projectError !== null) && (

@@ -43,18 +43,18 @@ function usableDuration(duration: number): number | null {
   return Number.isFinite(duration) && duration >= 0 ? duration : null
 }
 
-function describeMediaError(mediaError: MediaError | null): string {
+export function describeMediaError(mediaError: Pick<MediaError, 'code'> | null): string {
   switch (mediaError?.code) {
     case 1:
       return 'Video loading was interrupted. Try selecting the file again.'
     case 2:
-      return 'The browser could not read the local video file.'
+      return 'The browser could not read the local video file. Select it again or try another copy.'
     case 3:
-      return 'The browser could not decode this video. The file may be damaged or use an unsupported codec.'
+      return 'The browser could not decode this video. It may be damaged or use an unsupported codec; try a browser-supported MP4 or WebM copy.'
     case 4:
-      return 'This video format or codec is not supported by the browser.'
+      return 'This video format or codec is not supported by the browser. Try a browser-supported MP4 or WebM copy.'
     default:
-      return 'The video could not be loaded. It may be damaged or unsupported.'
+      return 'The video could not be loaded. It may be damaged or unsupported; select another copy to continue.'
   }
 }
 
@@ -81,7 +81,7 @@ export function useVideoController(
     }
 
     if (video.videoWidth <= 0 || video.videoHeight <= 0) {
-      setMediaError('The selected file does not contain a displayable video track.')
+      setMediaError('The selected file does not contain a displayable video track. Choose a video with a supported visual track.')
       return
     }
 
@@ -145,9 +145,8 @@ export function useVideoController(
 
     try {
       await video.play()
-    } catch (error) {
-      const reason = error instanceof Error ? ` ${error.message}` : ''
-      setMediaError(`Playback could not start.${reason}`)
+    } catch {
+      setMediaError('Playback could not start. Confirm this file plays in the browser, then try again.')
     }
   }, [metadata, videoRef])
 
@@ -167,7 +166,7 @@ export function useVideoController(
         video.currentTime = target
         setCurrentTime(target)
       } catch {
-        setMediaError('The browser could not seek to that timestamp.')
+        setMediaError('The browser could not seek to that timestamp. Pause the video and try again from the timeline.')
       }
     },
     [metadata, videoRef],

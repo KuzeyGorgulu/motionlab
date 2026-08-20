@@ -1,6 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 
+import { ONBOARDING_PREFERENCE_KEY } from '../src/product/preferences'
+
 const PROJECT = {
   format: 'motionlab',
   version: 1,
@@ -191,6 +193,9 @@ async function createTrackAndMarkSamples(page: Page, count: number) {
 }
 
 test.beforeEach(async ({ page }) => {
+  await page.addInitScript((preferenceKey) => {
+    window.localStorage.setItem(preferenceKey, 'true')
+  }, ONBOARDING_PREFERENCE_KEY)
   await page.goto('/')
 })
 

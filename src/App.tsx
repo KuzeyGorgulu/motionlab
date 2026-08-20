@@ -1,12 +1,34 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { EmptyWorkspace } from './components/EmptyWorkspace'
 import { ShieldIcon } from './components/Icons'
+import { HelpCenter, type HelpTopic } from './components/product/HelpCenter'
+import { OnboardingDialog } from './components/product/OnboardingDialog'
 import { ProjectRelinkWorkspace } from './components/project/ProjectRelinkWorkspace'
 import { VideoWorkspace } from './components/video/VideoWorkspace'
 import { useLocalVideoSource } from './hooks/useLocalVideoSource'
+import {
+  rememberOnboardingComplete,
+  shouldShowOnboarding,
+} from './product/preferences'
+import { loadBundledSample } from './product/sample'
 import { parseMotionLabProject } from './project/schema'
 import type { MotionLabProjectV1 } from './project/types'
+
+function firstRunOnboardingRequired(): boolean {
+  try {
+    return shouldShowOnboarding(window.localStorage)
+  } catch {
+    return true
+  }
+}
+
+function keyboardTargetIsInteractive(target: EventTarget | null): boolean {
+  return target instanceof HTMLElement && (
+    target.isContentEditable ||
+    target.closest('button, input, select, textarea, a, summary') !== null
+  )
+}
 
 export default function App() {
   const { source, importError, loadVideo, clearVideo } = useLocalVideoSource()
@@ -15,6 +37,10 @@ export default function App() {
   const [projectToRelink, setProjectToRelink] =
     useState<MotionLabProjectV1 | null>(null)
   const [projectError, setProjectError] = useState<string | null>(null)
+  const [sampleError, setSampleError] = useState<string | null>(null)
+  const [sampleLoading, setSampleLoading] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(firstRunOnboardingRequired)
+  const [helpTopic, setHelpTopic] = useState<HelpTopic | null>(null)
   const hasProjectDataRef = useRef(false)
 
   const confirmDiscard = useCallback(() =>
@@ -27,6 +53,7 @@ export default function App() {
   }, [])
 
   const handleOpenProject = useCallback(async (file: File) => {
+    setSampleError(null)
     let contents: string
     try {
       contents = await file.text()
@@ -56,6 +83,7 @@ export default function App() {
     ) {
       return
     }
+    setSampleError(null)
     loadVideo(file)
   }, [confirmDiscard, loadVideo, projectToRelink, source])
 
@@ -64,6 +92,63 @@ export default function App() {
     hasProjectDataRef.current = false
     clearVideo()
   }, [clearVideo, confirmDiscard, projectToRelink])
+
+  const dismissOnboarding = useCallback(() => {
+    try {
+      rememberOnboardingComplete(window.localStorage)
+    } catch {
+      // The tour remains dismissible even when browser storage is blocked.
+    }
+    setShowOnboarding(false)
+  }, [])
+
+  const openOnboarding = useCallback(() => {
+    setHelpTopic(null)
+    setShowOnboarding(true)
+  }, [])
+
+  const handleTrySample = useCallback(async (): Promise<boolean> => {
+    setSampleLoading(true)
+    setSampleError(null)
+    const sample = await loadBundledSample()
+    setSampleLoading(false)
+    if (!sample.ok) {
+      setSampleError(sample.message)
+      return false
+    }
+    if (!confirmDiscard()) return false
+
+    setProjectError(null)
+    setProjectToRelink(sample.project)
+    hasProjectDataRef.current = false
+    clearVideo()
+    if (!loadVideo(sample.video)) {
+      setProjectToRelink(null)
+      setSampleError('The sample video could not be opened in this browser. Import your own video to continue.')
+      return false
+    }
+    return true
+  }, [clearVideo, confirmDiscard, loadVideo])
+
+  useEffect(() => {
+    const handleShortcutHelp = (event: KeyboardEvent) => {
+      if (
+        event.defaultPrevented ||
+        event.key !== '?' ||
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey ||
+        keyboardTargetIsInteractive(event.target) ||
+        document.querySelector('dialog[open]') !== null
+      ) {
+        return
+      }
+      event.preventDefault()
+      setHelpTopic('shortcuts')
+    }
+    window.addEventListener('keydown', handleShortcutHelp)
+    return () => window.removeEventListener('keydown', handleShortcutHelp)
+  }, [])
 
   return (
     <div className="app-shell">
@@ -77,9 +162,18 @@ export default function App() {
           <span>Motion<span>Lab</span></span>
           <small>Video mechanics</small>
         </div>
-        <div className="local-status">
-          <ShieldIcon />
-          <span><strong>Local session</strong> · Video stays on this device</span>
+        <div className="app-header__actions">
+          <div className="local-status">
+            <ShieldIcon />
+            <span><strong>Local session</strong> · Video stays on this device</span>
+          </div>
+          <button
+            className="header-help"
+            onClick={() => setHelpTopic('overview')}
+            type="button"
+          >
+            Help <kbd>?</kbd>
+          </button>
         </div>
       </header>
 
@@ -95,7 +189,9 @@ export default function App() {
           importError={importError}
           onOpenProject={(file) => void handleOpenProject(file)}
           onSelectVideo={handleSelectVideo}
-          projectError={projectError}
+          onTrySample={() => void handleTrySample()}
+          projectError={projectError ?? sampleError}
+          sampleLoading={sampleLoading}
         />
       ) : (
         <VideoWorkspace
@@ -113,6 +209,17 @@ export default function App() {
           onSelectVideo={handleSelectVideo}
           projectError={projectError}
           source={source}
+        />
+      )}
+      {showOnboarding && <OnboardingDialog onDismiss={dismissOnboarding} />}
+      {helpTopic !== null && (
+        <HelpCenter
+          initialTopic={helpTopic}
+          onClose={() => setHelpTopic(null)}
+          onOpenOnboarding={openOnboarding}
+          onTrySample={handleTrySample}
+          sampleError={sampleError}
+          sampleLoading={sampleLoading}
         />
       )}
     </div>

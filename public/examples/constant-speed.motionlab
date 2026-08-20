@@ -1,0 +1,76 @@
+{
+  "format": "motionlab",
+  "version": 1,
+  "video": {
+    "name": "motionlab-constant-speed.webm",
+    "width": 320,
+    "height": 180
+  },
+  "annotations": [
+    {
+      "id": "sample-scale-line",
+      "type": "line",
+      "frame": {
+        "scheme": "timestamp-bucket-v1",
+        "bucketIndex": 6,
+        "bucketDuration": 0.03333333333333333,
+        "anchorTime": 0.2
+      },
+      "a": { "x": 40, "y": 150 },
+      "b": { "x": 140, "y": 150 }
+    }
+  ],
+  "calibration": {
+    "referenceA": { "x": 40, "y": 150 },
+    "referenceB": { "x": 140, "y": 150 },
+    "knownDistance": 1,
+    "unit": "m",
+    "origin": { "x": 40, "y": 150 },
+    "originSource": "reference-a",
+    "xAxis": { "x": 1, "y": 0 },
+    "axisSource": "reference"
+  },
+  "tracks": [
+    {
+      "id": "sample-constant-speed-track",
+      "name": "Constant-speed marker",
+      "color": "#4ecdc4",
+      "samples": [
+        { "id": "sample-cs-01", "time": 0.2, "frame": { "scheme": "timestamp-bucket-v1", "bucketIndex": 6, "bucketDuration": 0.03333333333333333, "anchorTime": 0.2 }, "nativePosition": { "x": 54, "y": 90 } },
+        { "id": "sample-cs-02", "time": 0.5, "frame": { "scheme": "timestamp-bucket-v1", "bucketIndex": 15, "bucketDuration": 0.03333333333333333, "anchorTime": 0.5 }, "nativePosition": { "x": 75, "y": 90 } },
+        { "id": "sample-cs-03", "time": 0.8, "frame": { "scheme": "timestamp-bucket-v1", "bucketIndex": 24, "bucketDuration": 0.03333333333333333, "anchorTime": 0.8 }, "nativePosition": { "x": 96, "y": 90 } },
+        { "id": "sample-cs-04", "time": 1.1, "frame": { "scheme": "timestamp-bucket-v1", "bucketIndex": 33, "bucketDuration": 0.03333333333333333, "anchorTime": 1.1 }, "nativePosition": { "x": 117, "y": 90 } },
+        { "id": "sample-cs-05", "time": 1.4, "frame": { "scheme": "timestamp-bucket-v1", "bucketIndex": 42, "bucketDuration": 0.03333333333333333, "anchorTime": 1.4 }, "nativePosition": { "x": 138, "y": 90 } },
+        { "id": "sample-cs-06", "time": 1.7, "frame": { "scheme": "timestamp-bucket-v1", "bucketIndex": 51, "bucketDuration": 0.03333333333333333, "anchorTime": 1.7 }, "nativePosition": { "x": 159, "y": 90 } },
+        { "id": "sample-cs-07", "time": 2, "frame": { "scheme": "timestamp-bucket-v1", "bucketIndex": 60, "bucketDuration": 0.03333333333333333, "anchorTime": 2 }, "nativePosition": { "x": 180, "y": 90 } },
+        { "id": "sample-cs-08", "time": 2.3, "frame": { "scheme": "timestamp-bucket-v1", "bucketIndex": 69, "bucketDuration": 0.03333333333333333, "anchorTime": 2.3 }, "nativePosition": { "x": 201, "y": 90 } },
+        { "id": "sample-cs-09", "time": 2.6, "frame": { "scheme": "timestamp-bucket-v1", "bucketIndex": 78, "bucketDuration": 0.03333333333333333, "anchorTime": 2.6 }, "nativePosition": { "x": 222, "y": 90 } }
+      ]
+    }
+  ],
+  "workspace": {
+    "activeTrackId": "sample-constant-speed-track",
+    "trailMode": "all",
+    "advanceAfterMark": true,
+    "analysisMode": "velocity",
+    "analysisExpanded": true,
+    "mediaTime": 0.2
+  },
+  "report": {
+    "schemaVersion": 1,
+    "metadata": {
+      "title": "Constant-Speed Motion",
+      "author": "",
+      "date": "",
+      "course": "",
+      "instructor": "",
+      "description": "A calibrated sample showing a marker moving horizontally at constant speed.",
+      "notes": "Fit a constant-velocity model and inspect the residuals before exporting the report."
+    },
+    "preferences": {
+      "excludedTrackIds": [],
+      "includedGraphs": ["position-x", "position-y", "speed"],
+      "observationTableTrackIds": ["sample-constant-speed-track"]
+    }
+  }
+}

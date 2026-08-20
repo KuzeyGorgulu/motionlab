@@ -1,6 +1,6 @@
-# MotionLab Three-Week Roadmap
+# MotionLab v1 Development Roadmap
 
-The sequence favors complete vertical slices over parallel unfinished systems. Timing may change as browser/media edge cases are discovered.
+The original Phase 1–13 plan is complete and culminates in MotionLab v1.0.0. The sequence favored complete vertical slices over parallel unfinished systems; the historical acceptance criteria remain below as a record of the product’s development.
 
 ## Week 1: measurement foundations
 
@@ -286,3 +286,17 @@ Acceptance criteria:
 - Standalone HTML contains embedded CSS and SVG, opens offline without MotionLab or external runtime dependencies, and never embeds the source video.
 - Focused unit/schema/export tests cover metadata, legacy compatibility, inclusion, summaries, fits, diagnostics, outliers, tables, unavailable values, deterministic output, and offline HTML; Playwright covers edit/export/save/reopen and print layout.
 - Tracking, calibration, kinematics, smoothing, models, diagnostics, project relinking, CSV/JSON/SVG semantics, local-only privacy, and dependency footprint remain intact.
+
+### Phase 13 — Release and productization (complete, v1.0.0)
+
+Turn the completed scientific workspace into an understandable, accessible, documented, and release-ready public product without expanding its frozen scientific feature set.
+
+Acceptance criteria:
+
+- First-run onboarding appears once, can be skipped, and reopens from the persistent Help interface without entering project state.
+- Keyboard Shortcuts documents only implemented commands and opens accessibly from Help or `?`; About uses the package version and Privacy reflects the actual local-first architecture.
+- Concise experiment ideas and a bundled constant-speed WebM/project pair provide a normal, deterministic sample path through the existing parser, relinking, workspace, analysis, and report systems.
+- Important empty/loading/error states explain the missing prerequisite or recovery action; native dialogs restore focus and narrow layouts avoid document-level horizontal overflow.
+- Report derivation is deferred until needed and its presentation module is lazy-loaded without changing scientific results.
+- README, changelog, semantic version, release notes/process/checklist, real screenshots, assisted-tracking GIF, and repeatable media-capture guidance describe MotionLab v1.0.0 accurately.
+- Unit/integration, strict typecheck, production build, Playwright workflows, and diff checks pass without a new dependency, scientific algorithm change, project-format change, backend, telemetry, account, commit, tag, push, or automatic release publication.

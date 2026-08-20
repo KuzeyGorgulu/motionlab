@@ -104,7 +104,7 @@ function ReportConfiguration({
       <fieldset className="report-config__group">
         <legend>Included tracks</legend>
         {tracks.length === 0 ? (
-          <p>No tracks are available yet.</p>
+          <p>No tracks are available yet. Return to Analysis and create a track to add report content.</p>
         ) : tracks.map((track) => {
           const included = !preferences.excludedTrackIds.includes(track.id)
           return (
@@ -148,7 +148,7 @@ function ReportConfiguration({
       <fieldset className="report-config__group">
         <legend>Observation tables</legend>
         {tracks.length === 0 ? (
-          <p>No tracks are available yet.</p>
+          <p>No tracks are available yet. Create a track and confirm observations before adding a table.</p>
         ) : tracks.map((track) => (
           <label className="report-check" key={track.id}>
             <input
@@ -332,7 +332,7 @@ function ReportDocument({ report }: { report: ExperimentReport }) {
       <section className="report-section">
         <h2>Tracks</h2>
         {report.tracks.length === 0 ? (
-          <p className="report-empty">No tracks are included in this report.</p>
+          <p className="report-empty">No tracks are included. Select a track in Report configuration, or return to Analysis to create one.</p>
         ) : report.tracks.map((track) => (
           <article className="report-track" key={track.id}>
             <header>
