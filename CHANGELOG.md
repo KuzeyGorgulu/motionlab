@@ -2,6 +2,16 @@
 
 All notable changes to MotionLab are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Added a crawler-readable public product landing page at `/` with local-first positioning, workflow guidance, existing capabilities, an Assisted Tracking demonstration, and restrained Qzeybei attribution.
+
+### Changed
+
+- Moved the unchanged MotionLab analysis workspace to `/app`, including direct-load and refresh support on Vercel.
+
 ## [1.0.0] - 2026-08-20
 
 ### Added

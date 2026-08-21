@@ -2,11 +2,11 @@
 
 ## Purpose
 
-MotionLab is a desktop-first browser workspace that turns motion visible in an ordinary video into inspectable physical measurements. It should give students, educators, hobbyists, and practical experimenters a transparent path from source footage to calibrated coordinates, motion data, graphs, and exports.
+MotionLab is a local-first browser tool for turning ordinary videos into measurable physics experiments. It gives students, educators, hobbyists, and practical experimenters a transparent path from source footage to calibrated coordinates, motion data, graphs, and exports.
 
 The analysis workspace is the product. MotionLab should feel like a compact engineering instrument: dark, precise, information-dense, and understandable without decorative dashboard content.
 
-MotionLab v1.0.0 is the completed scope of Phases 1–13. Its scientific feature set is frozen for this release; product guidance, local-first privacy, examples, accessibility, error recovery, release media, and public documentation are part of the shipped product rather than future concepts.
+MotionLab v1.0.0 is the completed scope of Phases 1–13. Later work is normal post-release product development. Product guidance, local-first privacy, examples, accessibility, error recovery, release media, and public documentation are part of the shipped product rather than future concepts.
 
 ## Current implemented scope
 

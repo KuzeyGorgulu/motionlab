@@ -7,6 +7,7 @@ import { chromium } from '@playwright/test'
 const scriptDirectory = dirname(fileURLToPath(import.meta.url))
 const outputDirectory = resolve(scriptDirectory, '../docs/assets')
 const baseUrl = process.env.MOTIONLAB_CAPTURE_URL ?? 'http://127.0.0.1:4173'
+const appUrl = new URL('/app', baseUrl).toString()
 const browser = await chromium.launch({ headless: true })
 
 try {
@@ -15,7 +16,7 @@ try {
   await page.addInitScript(() => {
     window.localStorage.setItem('motionlab:onboarding-complete:v1', 'true')
   })
-  await page.goto(baseUrl)
+  await page.goto(appUrl)
   await page.screenshot({
     path: resolve(outputDirectory, 'v1-empty-import.png'),
   })

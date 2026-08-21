@@ -135,7 +135,7 @@ function About() {
       <h2 id="about-title">About MotionLab</h2>
       <p className="about-motionlab__version">MotionLab {MOTIONLAB_RELEASE}</p>
       <p>
-        An open-source, local-first scientific workspace for turning motion in ordinary videos into inspectable measurements, graphs, model fits, diagnostics, and experiment reports.
+        MotionLab is a local-first browser tool for turning ordinary videos into measurable physics experiments.
       </p>
       <div className="about-motionlab__links">
         <a href={MOTIONLAB_GITHUB_URL} rel="noreferrer" target="_blank">GitHub repository</a>

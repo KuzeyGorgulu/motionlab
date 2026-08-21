@@ -6,11 +6,11 @@ async function openAsReturningUser(page: Page) {
   await page.addInitScript((preferenceKey) => {
     window.localStorage.setItem(preferenceKey, 'true')
   }, ONBOARDING_PREFERENCE_KEY)
-  await page.goto('/')
+  await page.goto('/app')
 }
 
 test('first launch presents dismissible onboarding that can be reopened from Help', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/app')
 
   const welcome = page.getByRole('dialog', { name: 'Welcome to MotionLab' })
   await expect(welcome).toBeVisible()

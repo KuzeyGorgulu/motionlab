@@ -196,7 +196,7 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript((preferenceKey) => {
     window.localStorage.setItem(preferenceKey, 'true')
   }, ONBOARDING_PREFERENCE_KEY)
-  await page.goto('/')
+  await page.goto('/app')
 })
 
 test('basic experiment can load a video, create a track, and save a project', async ({
