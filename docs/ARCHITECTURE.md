@@ -4,6 +4,8 @@
 
 MotionLab is a client-only React and TypeScript application built with Vite. There is no server. The implemented video, annotation, calibration, tracking, and analysis slices are organized as follows:
 
+- `src/main.tsx` resolves the public `/` landing page and `/app` workspace without a routing dependency. The Vite multi-page build emits `dist/index.html` and a distinct `dist/app/index.html`; Vercel rewrites direct `/app` requests only to the latter, and `src/App.tsx` remains the unchanged workspace boundary.
+- `src/components/landing/LandingPage.tsx` is the semantic public product page. The post-build `scripts/prerender-landing.mjs` renders that same component into `dist/index.html` and verifies its required crawler text while the client hydrates it. The page reuses the existing Assisted Tracking demo through Vite's asset pipeline and has no access to experiment state.
 - `src/App.tsx` owns whether a local video is selected, switches between the empty and active workspaces, coordinates the normal bundled-sample load, and owns presentation-only onboarding/Help visibility plus the in-memory assisted-tracking notice acknowledgement.
 - `src/hooks/useLocalVideoSource.ts` owns local-file validation, Object URL creation, replacement, error state, and cleanup.
 - `src/components/video/VideoWorkspace.tsx` composes the active analysis workspace and keyboard shortcuts.

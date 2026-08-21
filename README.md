@@ -1,6 +1,6 @@
 # MotionLab
 
-MotionLab is a local-first scientific workspace for measuring motion in ordinary videos. Calibrate a scene, track an object, inspect timestamp-based kinematics, fit simple motion models, review residuals, and assemble a reproducible experiment report—all in the browser.
+MotionLab is a local-first browser tool for turning ordinary videos into measurable physics experiments. Calibrate a scene, track an object, inspect timestamp-based kinematics, fit simple motion models, review residuals, and assemble a reproducible experiment report—all in the browser.
 
 **Live Demo:** https://motionlab-qzeybei.vercel.app/
 
@@ -55,7 +55,7 @@ The bundled **Constant-Speed Motion** sample is available from **Try sample** on
 
 ## Quick Start
 
-Use the [live demo](https://motionlab-qzeybei.vercel.app/) and choose **Try sample**, or run MotionLab locally with Node.js 20.19 or newer:
+Use the [live demo](https://motionlab-qzeybei.vercel.app/), choose **Open MotionLab**, then select **Try sample**; or run MotionLab locally with Node.js 20.19 or newer:
 
 ```bash
 npm install
