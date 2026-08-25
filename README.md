@@ -1,8 +1,12 @@
 # MotionLab
 
+[![CI](https://github.com/KuzeyGorgulu/motionlab/actions/workflows/ci.yml/badge.svg)](https://github.com/KuzeyGorgulu/motionlab/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-55d6be.svg)](LICENSE)
+[![GitHub release](https://img.shields.io/github/v/release/KuzeyGorgulu/motionlab?display_name=tag)](https://github.com/KuzeyGorgulu/motionlab/releases/tag/v1.0.0)
+
 MotionLab is a local-first browser tool for turning ordinary videos into measurable physics experiments. Calibrate a scene, track an object, inspect timestamp-based kinematics, fit simple motion models, review residuals, and assemble a reproducible experiment report—all in the browser.
 
-**Live Demo:** https://motionlab-qzeybei.vercel.app/
+[Live Demo](https://motionlab-qzeybei.vercel.app/) · [Watch 43s Demo](https://www.youtube.com/watch?v=guZrnA7kIt8) · [v1.0.0 Release](https://github.com/KuzeyGorgulu/motionlab/releases/tag/v1.0.0)
 
 No account, backend, API key, telemetry, or video upload is required.
 

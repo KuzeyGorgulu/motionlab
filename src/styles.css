@@ -4142,6 +4142,35 @@ input:disabled {
   }
 }
 
+@media (max-width: 800px) {
+  .workspace-bar {
+    gap: 8px;
+  }
+
+  .workspace-bar__actions {
+    gap: 4px;
+  }
+
+  .workspace-bar__actions .button {
+    padding: 0 7px;
+    font-size: 10px;
+  }
+
+  .workspace-view-switcher button {
+    padding: 0 7px;
+    font-size: 8px;
+  }
+
+  .workspace-action-menu > summary {
+    padding: 0 7px;
+    font-size: 9px;
+  }
+
+  .workspace-action-menu > summary::after {
+    margin-left: 4px;
+  }
+}
+
 @media (max-width: 680px) {
   .app-header {
     padding: 0 12px;
@@ -4160,37 +4189,16 @@ input:disabled {
   .workspace-bar {
     padding-block: 6px;
     flex-wrap: wrap;
-    gap: 8px;
   }
 
   .source-identity {
     flex: 1 1 100%;
   }
 
-  .workspace-bar__actions .button {
-    padding: 0 7px;
-    font-size: 10px;
-  }
-
   .workspace-bar__actions {
     flex: 1 1 auto;
     flex-wrap: wrap;
     justify-content: flex-end;
-    gap: 4px;
-  }
-
-  .workspace-view-switcher button {
-    padding: 0 7px;
-    font-size: 8px;
-  }
-
-  .workspace-action-menu > summary {
-    padding: 0 7px;
-    font-size: 9px;
-  }
-
-  .workspace-action-menu > summary::after {
-    margin-left: 4px;
   }
 
   .project-relink-warning {
@@ -4206,6 +4214,20 @@ input:disabled {
   .annotation-toolbar__hint,
   .tool-button kbd {
     display: none;
+  }
+
+  .annotation-toolbar {
+    gap: 6px;
+  }
+
+  .annotation-toolbar__tools {
+    min-width: 0;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+  }
+
+  .annotation-toolbar__history {
+    flex: 0 0 auto;
   }
 
   .tool-button {
