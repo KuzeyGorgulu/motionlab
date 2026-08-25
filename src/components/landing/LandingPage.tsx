@@ -1,5 +1,6 @@
 import assistedTrackingDemo from '../../../docs/assets/assisted-tracking-demo.gif'
 import { MOTIONLAB_GITHUB_URL } from '../../product/version'
+import { ProductDemo } from './ProductDemo'
 
 import './LandingPage.css'
 
@@ -115,6 +116,18 @@ export function LandingPage({ assistedTrackingDemoUrl = assistedTrackingDemo }: 
               Seed a target once, then review frame-by-frame suggestions generated locally in your browser.
             </figcaption>
           </figure>
+        </section>
+
+        <section className="landing-section landing-product-demo" aria-labelledby="product-demo-title">
+          <div className="landing-section__intro">
+            <p className="landing-section__label">Product demo</p>
+            <h2 id="product-demo-title">See MotionLab in action</h2>
+            <p>
+              From calibration and assisted tracking to kinematic analysis and diagnostics — all in the browser.
+            </p>
+          </div>
+
+          <ProductDemo />
         </section>
 
         <section className="landing-section landing-workflow" id="how-it-works" aria-labelledby="workflow-title">
