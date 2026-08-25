@@ -4216,6 +4216,20 @@ input:disabled {
     display: none;
   }
 
+  .annotation-toolbar {
+    gap: 6px;
+  }
+
+  .annotation-toolbar__tools {
+    min-width: 0;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+  }
+
+  .annotation-toolbar__history {
+    flex: 0 0 auto;
+  }
+
   .tool-button {
     padding: 0 6px;
   }
