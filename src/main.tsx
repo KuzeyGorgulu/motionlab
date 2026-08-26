@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot, hydrateRoot } from 'react-dom/client'
+import { inject } from '@vercel/analytics'
 
 import App from './App'
 import { LandingPage } from './components/landing/LandingPage'
@@ -13,6 +14,14 @@ if (root === null) {
 }
 
 const route = resolveMotionLabRoute(window.location.pathname)
+
+const isLocalhost =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1";
+
+if (route === "landing" && !isLocalhost) {
+  inject();
+}
 
 document.body.classList.toggle('landing-mode', route === 'landing')
 
